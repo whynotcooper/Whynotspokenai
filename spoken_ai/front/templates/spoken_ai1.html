@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+    <title>Kimi 口语教练</title>
+
+    <!-- 精简 normalize -->
+    <style>
+        /*! normalize.css v8.0.1 | MIT License | github.com/necolas/normalize.css */
+        html{line-height:1.15;-webkit-text-size-adjust:100%}body{margin:0}h1{font-size:2em;margin:.67em 0}
+    </style>
+
+    <!-- 内联样式：spoken_ai.css 核心 -->
+    <style>
+        :root{
+            --bg:#ffffff;
+            --bg-chat:#f2f2f7;
+            --text:#000;
+            --user:#007aff;
+            --bot:#e5e5ea;
+            --rec:#ff3b30;
+        }
+        [data-theme='dark']{
+            --bg:#000;
+            --bg-chat:#1c1c1e;
+            --text:#fff;
+            --user:#0a84ff;
+            --bot:#3a3a3c;
+        }
+        body{
+            font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,"PingFang SC",sans-serif;
+            background:var(--bg);
+            color:var(--text);
+            transition:background .3s,color .3s;
+            height:100vh;
+            display:flex;
+            flex-direction:column;
+        }
+        .header{
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            padding:12px 16px;
+            border-bottom:1px solid var(--bg-chat);
+        }
+        .header h1{font-size:20px;margin:0}
+        .theme-btn{background:none;border:none;font-size:20px;cursor:pointer}
+
+        .chat{flex:1;display:flex;flex-direction:column}
+        .chat-box{
+            flex:1;
+            padding:12px;
+            overflow-y:auto;
+            background:var(--bg-chat);
+        }
+        .user-bubble,.bot-bubble{
+            max-width:75%;
+            padding:10px 14px;
+            margin:6px 0;
+            border-radius:18px;
+            line-height:1.4;
+            word-break:break-word;
+        }
+        .user-bubble{
+            align-self:flex-end;
+            background:var(--user);
+            color:#fff;
+        }
+        .bot-bubble{
+            align-self:flex-start;
+            background:var(--bot);
+            color:var(--text);
+        }
+
+        .recorder{
+            padding:12px;
+            display:flex;
+            justify-content:center;
+            border-top:1px solid var(--bg-chat);
+        }
+        .rec-btn{
+            display:flex;
+            align-items:center;
+            gap:8px;
+            padding:12px 24px;
+            border:none;
+            border-radius:24px;
+            background:#007aff;
+            color:#fff;
+            font-size:16px;
+            cursor:pointer;
+            transition:background .2s;
+        }
+        .rec-btn.recording{background:var(--rec)}
+        .mic{font-size:20px}
+    </style>
+</head>
+
+<body>
+<div class="app">
+    <header class="header">
+        <h1>Kimi 口语教练</h1>
+        <button id="themeToggle" class="theme-btn" title="切换主题">🌗</button>
+    </header>
+
+    <main class="chat">
+        <div id="chatBox" class="chat-box">
+            <div class="bot-bubble">你好！按住下方按钮开始录音，松开后即可获得反馈。</div>
+        </div>
+
+        <!-- 录音按钮 -->
+        <div class="recorder">
+            <button id="recBtn" class="rec-btn">
+                <span id="recIcon" class="mic">🎤</span>
+                <span id="recText">按住说话</span>
+            </button>
+        </div>
+    </main>
+</div>
+
+<!-- 所有交互脚本 -->
+<script>
+/* ========== 工具函数 ========== */
+const chatBox = document.getElementById('chatBox');
+const recBtn   = document.getElementById('recBtn');
+const recIcon  = document.getElementById('recIcon');
+const recText  = document.getElementById('recText');
+const themeBtn = document.getElementById('themeToggle');
+
+function addBubble(text, isUser = false) {
+    const div = document.createElement('div');
+    div.className = isUser ? 'user-bubble' : 'bot-bubble';
+    div.textContent = text;
+    chatBox.appendChild(div);
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+function typeWriter(el, text, speed = 40) {
+    let i = 0;
+    el.textContent = '';
+    function type() {
+        if (i < text.length) {
+            el.textContent += text.charAt(i++);
+            setTimeout(type, speed);
+        }
+    }
+    type();
+}
+
+/* ========== 主题切换 ========== */
+themeBtn.addEventListener('click', () => {
+    const html = document.documentElement;
+    html.dataset.theme = html.dataset.theme === 'dark' ? '' : 'dark';
+});
+
+/* ========== 录音逻辑 ========== */
+let mediaRecorder, chunks;
+
+/* 开始录音 */
+function startRecording(e) {
+    e.preventDefault();
+    if (!navigator.mediaDevices) {
+        alert('浏览器不支持录音');
+        return;
+    }
+    recBtn.classList.add('recording');
+    recIcon.textContent = '⏹️';
+    recText.textContent = '松开发送';
+
+    navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(stream => {
+            const mime = MediaRecorder.isTypeSupported('audio/webm')
+                       ? 'audio/webm'
+                       : MediaRecorder.isTypeSupported('audio/mp4')
+                       ? 'audio/mp4'
+                       : '';
+            mediaRecorder = new MediaRecorder(stream, mime ? { mimeType: mime } : {});
+            chunks = [];
+            mediaRecorder.ondataavailable = e => chunks.push(e.data);
+            mediaRecorder.onstop = sendAudio;
+            mediaRecorder.start();
+        })
+        .catch(err => alert('麦克风权限获取失败：' + err));
+}
+
+/* 停止录音 */
+function stopRecording(e) {
+    e.preventDefault();
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+        mediaRecorder.stream.getTracks().forEach(t => t.stop());
+    }
+    recBtn.classList.remove('recording');
+    recIcon.textContent = '🎤';
+    recText.textContent = '按住说话';
+}
+
+/* 上传并处理音频 */
+function sendAudio() {
+    const blob = new Blob(chunks, { type: mediaRecorder.mimeType });
+    const ext  = mediaRecorder.mimeType.includes('webm') ? '.webm'
+               : mediaRecorder.mimeType.includes('mp4') ? '.m4a' : '.wav';
+    const form = new FormData();
+    form.append('audio', blob, 'record' + ext);
+
+    addBubble('正在识别...', false);
+
+    fetch('/process_audio/', {
+        method: 'POST',
+        body: form,
+        headers: { 'X-CSRFToken': getCookie('csrftoken') }
+    })
+    .then(r => r.json())
+    .then(data => {
+        chatBox.removeChild(chatBox.lastChild);   // 移除“正在识别...”
+        if (data.error) {
+            addBubble('识别失败：' + data.error, false);
+            return;
+        }
+        addBubble(data.transcription, true);
+
+        const botDiv = document.createElement('div');
+        botDiv.className = 'bot-bubble';
+        chatBox.appendChild(botDiv);
+        typeWriter(botDiv, data.feedback ?? '[无反馈]');
+    })
+    .catch(err => {
+        addBubble('识别失败，请重试：' + err, false);
+        console.error(err);
+    });
+}
+
+/* 事件绑定 */
+recBtn.addEventListener('mousedown', startRecording);
+recBtn.addEventListener('touchstart', startRecording, { passive: true });
+recBtn.addEventListener('mouseup', stopRecording);
+recBtn.addEventListener('touchend', stopRecording);
+
+/* 简易 CSRF token 获取函数 */
+function getCookie(name) {
+    let r = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+    return r ? decodeURIComponent(r[2]) : '';
+}
+</script>
+</body>
+</html>

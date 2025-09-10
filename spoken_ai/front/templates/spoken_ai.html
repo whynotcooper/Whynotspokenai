@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>语音对话助手</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            margin: 0;
+            color: #333;
+        }
+        .chat-box {
+            height: 400px;
+            overflow-y: scroll;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: #f9f9f9;
+        }
+        .chat-box p {
+            margin: 5px 0;
+            padding: 8px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        .user-msg {
+            background: #007bff;
+            color: #fff;
+            float: right;
+        }
+        .system-msg {
+            background: #ccc;
+            color: #333;
+        }
+        .audio-controls {
+            margin-bottom: 20px;
+        }
+        .audio-controls button {
+            padding: 10px 20px;
+            background: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .audio-controls button:hover {
+            background: #0056b3;
+        }
+        .finish-btn {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background: #28a745;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .finish-btn:hover {
+            background: #218838;
+        }
+        .download-btn {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background: #dc3545;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 20px;
+        }
+        .download-btn:hover {
+            background: #a71d2a;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>语音对话助手</h1>
+        </div>
+        <div class="chat-box" id="chat-box">
+            <!-- 聊天内容将在这里显示 -->
+        </div>
+        <div class="audio-controls">
+            <button id="start-recording">开始录音</button>
+            <button id="stop-recording" disabled>停止录音</button>
+        </div>
+        <button class="finish-btn" id="finish-btn">结束对话</button>
+        <button class="download-btn" id="download-btn" style="display:none;">下载报告</button>
+    </div>
+
+    <script>
+        const chatBox = document.getElementById('chat-box');
+        const startRecordingBtn = document.getElementById('start-recording');
+        const stopRecordingBtn = document.getElementById('stop-recording');
+        const finishBtn = document.getElementById('finish-btn');
+        const downloadBtn = document.getElementById('download-btn');
+
+        let mediaRecorder;
+        let audioChunks = [];
+        let conversation = [];
+
+        // 请求麦克风权限并开始录音
+        startRecordingBtn.addEventListener('click', async () => {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+
+                mediaRecorder.ondataavailable = event => {
+                    audioChunks.push(event.data);
+                };
+
+                mediaRecorder.onstop = async () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    const audio = new Audio(audioUrl);
+
+                    // 显示用户消息
+                    const userMsg = document.createElement('p');
+                    userMsg.classList.add('user-msg');
+                    userMsg.textContent = 'You: [录音]';
+                    chatBox.appendChild(userMsg);
+
+                    // 上传音频到服务器
+                    const formData = new FormData();
+                    formData.append('audio', audioBlob, 'recording.wav');
+
+                    try {
+                        const response = await fetch('/process_audio/', {
+                            method: 'POST',
+                            body: formData
+                        });
+
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+
+                        const data = await response.json();
+                        const shortReply = data.short_reply;
+
+                        // 显示系统消息
+                        const systemMsg = document.createElement('p');
+                        systemMsg.classList.add('system-msg');
+                        systemMsg.textContent = 'System: ' + shortReply;
+                        chatBox.appendChild(systemMsg);
+
+                        // 保存对话内容
+                        conversation.push({ user: '[录音]', system: shortReply });
+
+                        // 滚动到聊天框底部
+                        chatBox.scrollTop = chatBox.scrollHeight;
+                    } catch (error) {
+                        console.error('Error:', error);
+                    }
+
+                    // 清空音频块
+                    audioChunks = [];
+                };
+
+                mediaRecorder.start();
+                startRecordingBtn.disabled = true;
+                stopRecordingBtn.disabled = false;
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        });
+
+        // 停止录音
+        stopRecordingBtn.addEventListener('click', () => {
+            mediaRecorder.stop();
+            startRecordingBtn.disabled = false;
+            stopRecordingBtn.disabled = true;
+        });
+
+        // 结束对话
+        finishBtn.addEventListener('click', async () => {
+            try {
+                const response = await fetch('/finish_session/', {
+                    method: 'POST',
+                    body: JSON.stringify({ conversation }),
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'spoken_report.pdf';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+
+                // 显示下载按钮
+                downloadBtn.style.display = 'block';
+
+                // 清空聊天内容
+                chatBox.innerHTML = '';
+                conversation = [];
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        });
+
+        // 下载报告
+        downloadBtn.addEventListener('click', () => {
+            window.location.href = '/download_report/';
+        });
+    </script>
+</body>
+</html>

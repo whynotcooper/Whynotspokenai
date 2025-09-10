@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>网页录音器</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin: 10px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        #status {
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        #audioVisualizer {
+            width: 100%;
+            height: 100px;
+            background-color: #f0f0f0;
+            margin: 20px 0;
+        }
+        #recordedAudio {
+            width: 100%;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>网页录音器</h1>
+    <p>点击下方按钮开始录音，录音完成后可以保存到本地</p>
+    
+    <div id="audioVisualizer"></div>
+    
+    <button id="startBtn">开始录音</button>
+    <button id="stopBtn" disabled>停止录音</button>
+    <button id="saveBtn" disabled>保存录音</button>
+    
+    <div id="status">准备就绪</div>
+    
+    <audio id="recordedAudio" controls></audio>
+    
+    <script>
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const saveBtn = document.getElementById('saveBtn');
+        const statusEl = document.getElementById('status');
+        const recordedAudio = document.getElementById('recordedAudio');
+        const audioVisualizer = document.getElementById('audioVisualizer');
+        
+        let mediaRecorder;
+        let audioChunks = [];
+        let audioContext;
+        let analyser;
+        let dataArray;
+        let animationId;
+        
+        // 初始化音频上下文和分析器
+        function initAudioContext() {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            analyser = audioContext.createAnalyser();
+            analyser.fftSize = 256;
+            const bufferLength = analyser.frequencyBinCount;
+            dataArray = new Uint8Array(bufferLength);
+        }
+        
+        // 绘制音频波形
+        function drawWaveform() {
+            const canvas = document.createElement('canvas');
+            canvas.width = audioVisualizer.offsetWidth;
+            canvas.height = audioVisualizer.offsetHeight;
+            audioVisualizer.innerHTML = '';
+            audioVisualizer.appendChild(canvas);
+            
+            const canvasCtx = canvas.getContext('2d');
+            
+            function draw() {
+                animationId = requestAnimationFrame(draw);
+                
+                analyser.getByteTimeDomainData(dataArray);
+                
+                canvasCtx.fillStyle = 'rgb(200, 200, 200)';
+                canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                canvasCtx.lineWidth = 2;
+                canvasCtx.strokeStyle = 'rgb(0, 0, 0)';
+                canvasCtx.beginPath();
+                
+                const sliceWidth = canvas.width * 1.0 / analyser.frequencyBinCount;
+                let x = 0;
+                
+                for (let i = 0; i < analyser.frequencyBinCount; i++) {
+                    const v = dataArray[i] / 128.0;
+                    const y = v * canvas.height / 2;
+                    
+                    if (i === 0) {
+                        canvasCtx.moveTo(x, y);
+                    } else {
+                        canvasCtx.lineTo(x, y);
+                    }
+                    
+                    x += sliceWidth;
+                }
+                
+                canvasCtx.lineTo(canvas.width, canvas.height / 2);
+                canvasCtx.stroke();
+            }
+            
+            draw();
+        }
+        
+        // 开始录音
+        startBtn.addEventListener('click', async () => {
+            try {
+                statusEl.textContent = "请求麦克风权限...";
+                
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                
+                initAudioContext();
+                const source = audioContext.createMediaStreamSource(stream);
+                source.connect(analyser);
+                drawWaveform();
+                
+                mediaRecorder.addEventListener('dataavailable', event => {
+                    audioChunks.push(event.data);
+                });
+                
+                mediaRecorder.addEventListener('stop', () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    recordedAudio.src = audioUrl;
+                    statusEl.textContent = "录音完成，可以播放或保存";
+                    saveBtn.disabled = false;
+                    cancelAnimationFrame(animationId);
+                });
+                
+                audioChunks = [];
+                mediaRecorder.start();
+                
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+                saveBtn.disabled = true;
+                statusEl.textContent = "录音中...";
+            } catch (error) {
+                statusEl.textContent = "错误: " + error.message;
+                console.error(error);
+            }
+        });
+        
+        // 停止录音
+        stopBtn.addEventListener('click', () => {
+            mediaRecorder.stop();
+            mediaRecorder.stream.getTracks().forEach(track => track.stop());
+            
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+        });
+        
+        // 保存录音
+        saveBtn.addEventListener('click', () => {
+            const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+            const audioUrl = URL.createObjectURL(audioBlob);
+            
+            const a = document.createElement('a');
+            a.href = audioUrl;
+            a.download = `recording-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.wav`;
+            a.click();
+            
+            statusEl.textContent = "录音已保存";
+        });
+    </script>
+</body>
+</html>

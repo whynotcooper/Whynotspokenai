@@ -1,0 +1,50 @@
+/* 设计变量（自动切换暗黑模式） */
+:root{
+  --surface-container-low: #f3edf7;
+  --on-surface: #1c1e21;
+  --primary: #6750a4;
+  --radius:24px;
+  --shadow:0 8px 32px rgba(0,0,0,.12);
+  --blur:20px;
+}
+[data-theme="dark"]{
+  --surface-container-low: rgba(30,30,46,.50);
+  --on-surface: #e2e8f0;
+  --primary: #a78bfa;
+}
+
+/* 通用 */
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Noto Sans SC',sans-serif;}
+body{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,#f5f7fa 0%, #c3cfe2 100%);transition:.4s;}
+[data-theme="dark"] body{background:linear-gradient(135deg,#1e1e2e 0%, #302b63 100%);}
+
+/* 顶部栏 */
+header{width:100%;padding:24px 48px;display:flex;justify-content:space-between;align-items:center;}
+header h1{font-size:26px;font-weight:700;color:var(--on-surface);}
+#themeToggle{background:none;border:none;color:var(--on-surface);cursor:pointer;font-size:28px;}
+
+/* 搜索框 */
+.search-box{position:relative;margin:16px 0 32px;width:clamp(300px,60vw,600px);}
+.search-box input{width:100%;padding:16px 52px 16px 20px;border-radius:var(--radius);border:none;background:var(--surface-container-low);color:var(--on-surface);font-size:16px;backdrop-filter:blur(var(--blur));box-shadow:var(--shadow);}
+.search-box .icon{position:absolute;right:16px;top:50%;transform:translateY(-50%);color:var(--primary);cursor:pointer;font-size:24px;}
+.suggestion{position:absolute;top:100%;left:0;right:0;margin-top:4px;background:var(--surface-container-low);border-radius:var(--radius);backdrop-filter:blur(var(--blur));box-shadow:var(--shadow);overflow:hidden;display:none;}
+.suggestion li{padding:12px 20px;cursor:pointer;color:var(--on-surface);}
+.suggestion li:hover{background:rgba(103,80,164,.15);}
+
+/* 卡片网格 */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:32px;padding:0 48px 48px;width:100%;max-width:1200px;}
+.card{position:relative;height:200px;border-radius:var(--radius);background:var(--surface-container-low);color:var(--on-surface);overflow:hidden;backdrop-filter:blur(var(--blur));box-shadow:var(--shadow);display:flex;align-items:flex-end;padding:24px;transition:transform .4s;}
+.card:hover{transform:rotateY(-5deg) scale(1.03);}
+.card .icon{font-size:48px;color:var(--primary);position:absolute;top:24px;left:24px;}
+.card h3{font-size:22px;font-weight:600;margin-bottom:4px;}
+.card p{font-size:14px;opacity:.8;}
+.card-bg{position:absolute;inset:0;border-radius:inherit;background:linear-gradient(135deg,var(--primary),#9f7aea);opacity:.15;transition:opacity .4s;}
+.card:hover .card-bg{opacity:.25;}
+
+/* 骨架屏动画 */
+@keyframes pulse{
+  0%{opacity:1;}
+  50%{opacity:.4;}
+  100%{opacity:1;}
+}
+.loading{animation:pulse 1.2s infinite;}
