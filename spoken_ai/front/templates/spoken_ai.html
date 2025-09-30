@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -35,24 +35,32 @@
             margin-bottom: 10px;
             padding: 10px;
             background: #f9f9f9;
+            display: flex;
+            flex-direction: column;
         }
         .chat-box p {
             margin: 5px 0;
             padding: 8px;
             border-radius: 4px;
-            display: inline-block;
+            max-width: 80%;
         }
         .user-msg {
             background: #007bff;
             color: #fff;
-            float: right;
+            align-self: flex-end;
+            margin-left: auto;
         }
         .system-msg {
-            background: #ccc;
+            background: #e9ecef;
             color: #333;
+            align-self: flex-start;
+            margin-right: auto;
+            border-left: 4px solid #28a745;
         }
         .audio-controls {
             margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
         }
         .audio-controls button {
             padding: 10px 20px;
@@ -66,6 +74,10 @@
         .audio-controls button:hover {
             background: #0056b3;
         }
+        .audio-controls button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
         .finish-btn {
             display: block;
             width: 100%;
@@ -76,8 +88,12 @@
             border-radius: 4px;
             cursor: pointer;
             font-size: 16px;
+            margin-top: 10px;
         }
         .finish-btn:hover {
+            background: #218838;
+        }
+        .finish-btn.active {
             background: #218838;
         }
         .download-btn {
@@ -90,10 +106,62 @@
             border-radius: 4px;
             cursor: pointer;
             font-size: 16px;
-            margin-top: 20px;
+            margin-top: 10px;
+            display: none;
         }
         .download-btn:hover {
             background: #a71d2a;
+        }
+        .timer {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #666;
+        }
+        .audio-player {
+            margin-top: 10px;
+            width: 100%;
+        }
+        .debug-info {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            font-size: 12px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        .debug-info h3 {
+            margin-top: 0;
+            color: #495057;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        .status-connecting {
+            background-color: #ffc107;
+        }
+        .status-success {
+            background-color: #28a745;
+        }
+        .status-error {
+            background-color: #dc3545;
+        }
+        .system-audio-container {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            border-left: 3px solid #17a2b8;
+        }
+        .system-audio-container p {
+            margin: 0 0 5px 0;
+            font-weight: bold;
+            color: #17a2b8;
         }
     </style>
 </head>
@@ -109,8 +177,14 @@
             <button id="start-recording">开始录音</button>
             <button id="stop-recording" disabled>停止录音</button>
         </div>
+        <div class="timer" id="timer">00:00:00</div>
         <button class="finish-btn" id="finish-btn">结束对话</button>
-        <button class="download-btn" id="download-btn" style="display:none;">下载报告</button>
+        <button class="download-btn" id="download-btn">下载报告</button>
+        
+        <div class="debug-info" id="debug-info">
+            <h3>调试信息 <span id="debug-status"></span></h3>
+            <div id="debug-content"></div>
+        </div>
     </div>
 
     <script>
@@ -119,62 +193,173 @@
         const stopRecordingBtn = document.getElementById('stop-recording');
         const finishBtn = document.getElementById('finish-btn');
         const downloadBtn = document.getElementById('download-btn');
+        const timerDisplay = document.getElementById('timer');
+        const debugInfo = document.getElementById('debug-info');
+        const debugContent = document.getElementById('debug-content');
+        const debugStatus = document.getElementById('debug-status');
 
         let mediaRecorder;
         let audioChunks = [];
         let conversation = [];
+        let timer;
+        let startTime;
+
+        // 添加调试信息
+        function addDebugMessage(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const messageElement = document.createElement('div');
+            messageElement.innerHTML = `<strong>${timestamp}</strong>: ${message}`;
+            
+            if (type === 'error') {
+                messageElement.style.color = '#dc3545';
+            } else if (type === 'success') {
+                messageElement.style.color = '#28a745';
+            }
+            
+            debugContent.appendChild(messageElement);
+            debugContent.scrollTop = debugContent.scrollHeight;
+        }
+
+        // 更新状态指示器
+        function updateStatus(status) {
+            debugStatus.innerHTML = '';
+            const indicator = document.createElement('span');
+            indicator.classList.add('status-indicator');
+            
+            if (status === 'connecting') {
+                indicator.classList.add('status-connecting');
+                debugStatus.appendChild(indicator);
+                debugStatus.appendChild(document.createTextNode('连接中...'));
+            } else if (status === 'success') {
+                indicator.classList.add('status-success');
+                debugStatus.appendChild(indicator);
+                debugStatus.appendChild(document.createTextNode('成功'));
+            } else if (status === 'error') {
+                indicator.classList.add('status-error');
+                debugStatus.appendChild(indicator);
+                debugStatus.appendChild(document.createTextNode('错误'));
+            }
+        }
 
         // 请求麦克风权限并开始录音
         startRecordingBtn.addEventListener('click', async () => {
             try {
+                addDebugMessage('请求麦克风权限...');
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                addDebugMessage('麦克风权限获取成功');
+                
                 mediaRecorder = new MediaRecorder(stream);
 
                 mediaRecorder.ondataavailable = event => {
                     audioChunks.push(event.data);
+                    addDebugMessage(`收到音频数据块，大小: ${event.data.size} 字节`);
                 };
 
                 mediaRecorder.onstop = async () => {
+                    addDebugMessage('录音停止，开始处理音频');
                     const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-                    const audioUrl = URL.createObjectURL(audioBlob);
-                    const audio = new Audio(audioUrl);
+                    addDebugMessage(`音频Blob创建完成，大小: ${audioBlob.size} 字节`);
 
-                    // 显示用户消息
+                    // 显示用户消息（先显示"正在识别..."）
                     const userMsg = document.createElement('p');
                     userMsg.classList.add('user-msg');
-                    userMsg.textContent = 'You: [录音]';
+                    userMsg.textContent = '用户: 正在识别...';
                     chatBox.appendChild(userMsg);
+                    chatBox.scrollTop = chatBox.scrollHeight;
 
                     // 上传音频到服务器
                     const formData = new FormData();
                     formData.append('audio', audioBlob, 'recording.wav');
 
                     try {
+                        updateStatus('connecting');
+                        addDebugMessage('开始上传音频到服务器...');
+                        
                         const response = await fetch('/process_audio/', {
                             method: 'POST',
                             body: formData
                         });
 
+                        addDebugMessage(`服务器响应状态: ${response.status} ${response.statusText}`);
+                        
                         if (!response.ok) {
-                            throw new Error('Network response was not ok');
+                            throw new Error(`网络响应异常: ${response.status} ${response.statusText}`);
                         }
 
-                        const data = await response.json();
-                        const shortReply = data.short_reply;
+                        const responseText = await response.text();
+                        addDebugMessage(`收到服务器响应: ${responseText}`);
+                        
+                        let data;
+                        try {
+                            data = JSON.parse(responseText);
+                            updateStatus('success');
+                            addDebugMessage('JSON解析成功', 'success');
+                        } catch (e) {
+                            throw new Error(`JSON解析失败: ${e.message}`);
+                        }
+
+                        if (data.error) {
+                            throw new Error(`服务器返回错误: ${data.error}`);
+                        }
+
+                        const shortReply = data.short_reply || '[无回复]';
+                        const transcription = data.transcription || '[语音识别失败]';
+                        const audioReplyUrl = data.audio_reply_url || '';
+
+                        addDebugMessage(`识别结果: ${transcription}`, 'success');
+                        addDebugMessage(`系统回复: ${shortReply}`, 'success');
+                        addDebugMessage(`音频回复URL: ${audioReplyUrl}`, audioReplyUrl ? 'success' : 'info');
+
+                        // 更新用户消息为真实识别内容
+                        userMsg.textContent = '用户: ' + transcription;
 
                         // 显示系统消息
                         const systemMsg = document.createElement('p');
                         systemMsg.classList.add('system-msg');
-                        systemMsg.textContent = 'System: ' + shortReply;
+                        systemMsg.textContent = '系统: ' + shortReply;
                         chatBox.appendChild(systemMsg);
 
+                        // 添加音频播放器
+                        if (audioReplyUrl) {
+                            const audioContainer = document.createElement('div');
+                            audioContainer.classList.add('system-audio-container');
+                            
+                            const audioLabel = document.createElement('p');
+                            audioLabel.textContent = '语音回复:';
+                            audioContainer.appendChild(audioLabel);
+                            
+                            const audioPlayer = document.createElement('audio');
+                            audioPlayer.classList.add('audio-player');
+                            audioPlayer.controls = true;
+                            audioPlayer.src = audioReplyUrl;
+                            
+                            // 添加音频加载和错误处理
+                            audioPlayer.addEventListener('loadeddata', () => {
+                                addDebugMessage('音频加载成功', 'success');
+                            });
+                            
+                            audioPlayer.addEventListener('error', (e) => {
+                                addDebugMessage(`音频加载失败: ${e.message}`, 'error');
+                            });
+                            
+                            audioContainer.appendChild(audioPlayer);
+                            chatBox.appendChild(audioContainer);
+                        }
+
                         // 保存对话内容
-                        conversation.push({ user: '[录音]', system: shortReply });
+                        conversation.push({ 
+                            user: transcription, 
+                            system: shortReply,
+                            audio_reply_url: audioReplyUrl
+                        });
 
                         // 滚动到聊天框底部
                         chatBox.scrollTop = chatBox.scrollHeight;
                     } catch (error) {
                         console.error('Error:', error);
+                        updateStatus('error');
+                        addDebugMessage(`处理失败: ${error.message}`, 'error');
+                        userMsg.textContent = '用户: [识别或上传失败]';
                     }
 
                     // 清空音频块
@@ -182,22 +367,43 @@
                 };
 
                 mediaRecorder.start();
+                addDebugMessage('录音开始');
                 startRecordingBtn.disabled = true;
                 stopRecordingBtn.disabled = false;
+                startTime = Date.now();
+                timerDisplay.style.display = 'block';
+                timer = setInterval(() => {
+                    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                    const hours = Math.floor(elapsed / 3600);
+                    const minutes = Math.floor((elapsed % 3600) / 60);
+                    const seconds = elapsed % 60;
+                    timerDisplay.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                }, 1000);
             } catch (error) {
-                console.error('Error:', error);
+                console.error('Error accessing microphone:', error);
+                updateStatus('error');
+                addDebugMessage(`无法访问麦克风: ${error.message}`, 'error');
+                alert('无法访问麦克风，请检查权限或设备');
             }
         });
 
         // 停止录音
         stopRecordingBtn.addEventListener('click', () => {
-            mediaRecorder.stop();
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+                addDebugMessage('手动停止录音');
+            }
             startRecordingBtn.disabled = false;
             stopRecordingBtn.disabled = true;
+            clearInterval(timer);
+            timerDisplay.textContent = '00:00:00';
         });
 
         // 结束对话
         finishBtn.addEventListener('click', async () => {
+            finishBtn.classList.add('active');
+            addDebugMessage('结束对话，生成报告...');
+            
             try {
                 const response = await fetch('/finish_session/', {
                     method: 'POST',
@@ -208,7 +414,7 @@
                 });
 
                 if (!response.ok) {
-                    throw new Error('Network response was not ok');
+                    throw new Error('生成报告失败');
                 }
 
                 const blob = await response.blob();
@@ -220,6 +426,8 @@
                 a.click();
                 document.body.removeChild(a);
 
+                addDebugMessage('报告生成成功', 'success');
+
                 // 显示下载按钮
                 downloadBtn.style.display = 'block';
 
@@ -228,13 +436,19 @@
                 conversation = [];
             } catch (error) {
                 console.error('Error:', error);
+                addDebugMessage(`报告生成失败: ${error.message}`, 'error');
+                alert('报告生成失败，请重试');
             }
         });
 
-        // 下载报告
+        // 下载报告（备用方式）
         downloadBtn.addEventListener('click', () => {
+            addDebugMessage('使用备用方式下载报告');
             window.location.href = '/download_report/';
         });
+
+        // 初始调试信息
+        addDebugMessage('页面加载完成，准备就绪');
     </script>
 </body>
 </html>

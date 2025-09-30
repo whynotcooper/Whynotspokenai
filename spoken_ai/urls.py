@@ -11,4 +11,6 @@ urlpatterns = [
     path('spoken_ai/', views.spoken_ai, name='spoken_ai'),  # 口语教练
     path('process_audio/', views.process_audio, name='process_audio'),  # 处理音频
     path('finish_session/', views.finish_session, name='finish_session'),
+    path('login/', views.login, name='login'),  # 登录页面
+
 ]

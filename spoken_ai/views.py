@@ -8,11 +8,11 @@ import subprocess
 import json, os, tempfile, datetime
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
-from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
-from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
-from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.styles import  getSampleStyleSheet
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 import io
 
 
@@ -21,15 +21,34 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 def _save_and_transcode(audio):
     """返回 (tmp_path, wav_path)"""
+    if audio.size == 0:
+        raise ValueError("上传的音频文件为空")
+
     ext = os.path.splitext(audio.name)[1] or ".webm"
-    tmp = tempfile.mktemp(suffix=ext, dir=UPLOAD_DIR)
-    wav = tempfile.mktemp(suffix=".wav", dir=UPLOAD_DIR)
-    with open(tmp, "wb+") as f:
-        for c in audio.chunks():
-            f.write(c)
-    subprocess.run([
-        "ffmpeg", "-y", "-i", tmp, "-ar", "16000", "-ac", "1", "-sample_fmt", "s16", wav
-    ], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    # 使用安全的临时文件
+    with tempfile.NamedTemporaryFile(suffix=ext, dir=UPLOAD_DIR, delete=False) as tmp_f:
+        for chunk in audio.chunks():
+            tmp_f.write(chunk)
+        tmp = tmp_f.name
+
+    with tempfile.NamedTemporaryFile(suffix=".wav", dir=UPLOAD_DIR, delete=False) as wav_f:
+        wav = wav_f.name
+
+    # 调用 ffmpeg
+    try:
+        result = subprocess.run([
+            "ffmpeg", "-y", "-i", tmp, "-vn", "-ar", "16000", "-ac", "1", "-sample_fmt", "s16", wav
+        ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
+        if result.returncode != 0:
+            print("FFmpeg failed with stderr:")
+            print(result.stderr)
+            raise subprocess.CalledProcessError(result.returncode, result.args, result.stderr)
+
+    except FileNotFoundError:
+        raise RuntimeError("ffmpeg 未找到，请确保已安装并加入系统 PATH")
+
     return tmp, wav
 
 def _safe_remove(*paths):
@@ -46,16 +65,12 @@ def index(request):
 
 
 # 假设 VoiceTranscriptionPipeline 和 TextAnalysisPipeline 类已经定义好
+from .utils import synthesize as tts_synthesize  # ← 新增导入
 from .utils import VoiceTranscriptionPipeline, TextAnalysisPipeline
 transcription_pipeline = VoiceTranscriptionPipeline()
 analysis_pipeline = TextAnalysisPipeline()
-
 @csrf_exempt
 def process_audio(request):
-    """
-    单次录音上传
-    返回：{ short_reply: <str> }   （问题存 session，不返回）
-    """
     if request.method != 'POST':
         return JsonResponse({'error': 'POST only'}, status=405)
 
@@ -63,36 +78,66 @@ def process_audio(request):
     if not audio:
         return JsonResponse({'error': 'No audio'}, status=400)
 
-    # 保存 + 转码 wav（同你旧代码）
-    tmp_path, wav_path = _save_and_transcode(audio)   # 复用你旧逻辑，略
-    print(f"tmp_path: {tmp_path}, wav_path: {wav_path}")
+    tmp_path, wav_path = _save_and_transcode(audio)
+    tts_output_path = None
+
     try:
-        # 初始化语音转录管道
-
+        print(f"[DEBUG] Starting audio processing, file size: {audio.size}")
+        
+        # 语音识别
+        print("[DEBUG] Starting transcription...")
         transcription = transcription_pipeline.transcribe_audio(wav_path)
-        print(f"transcription: {transcription}")
-        # 初始化文本分析管道
-
+        print(f"[DEBUG] Transcribed text: {transcription}")
+        
+        # 生成回复
+        print("[DEBUG] Generating response...")
         short = analysis_pipeline.short_response(transcription)
-        print(f"short: {short}")
-        # 把问题攒到 session
-        if "questions" not in request.session:
-            request.session["questions"] = []
-        request.session["questions"].append(transcription)
+        print(f"[DEBUG] Generated response: {short}")
+        
+        # TTS 合成英文语音
+        print("[DEBUG] Starting TTS synthesis...")
+        tts_dir = os.path.join(settings.MEDIA_ROOT, 'tts_replies')
+        os.makedirs(tts_dir, exist_ok=True)
+        tts_filename = f"tts_{uuid.uuid4().hex}.wav"
+        tts_output_path = os.path.join(tts_dir, tts_filename)
+
+        tts_synthesize(short, tts_output_path)
+        print(f"[DEBUG] Synthesized audio saved to {tts_output_path}")
+        
+        # 检查文件是否生成成功
+        if not os.path.exists(tts_output_path):
+            raise Exception(f"TTS output file not created: {tts_output_path}")
+        
+        print(f"[DEBUG] TTS file exists, size: {os.path.getsize(tts_output_path)} bytes")
+        
+        # 存 session
+        request.session.setdefault("questions", []).append(transcription)
         request.session.modified = True
 
-        # 返回短片段回答
-        return JsonResponse({"short_reply": short})
+        audio_reply_url = os.path.join(settings.MEDIA_URL, 'tts_replies', tts_filename).replace("\\", "/")
+        print(f"[DEBUG] audio_reply_url: {audio_reply_url}")
+        
+        response_data = {
+            "short_reply": short,
+            "transcription": transcription,
+            "audio_reply_url": audio_reply_url
+        }
+        
+        print(f"[DEBUG] Sending response to client: {response_data}")
+        return JsonResponse(response_data)
 
     except Exception as e:
-        return JsonResponse({"error": str(e)}, status=500)
+        print(f"[ERROR] Processing failed: {str(e)}")
+        import traceback
+        print(f"[ERROR] Traceback: {traceback.format_exc()}")
+        return JsonResponse({"error": f"Processing failed: {str(e)}"}, status=500)
+    
     finally:
         _safe_remove(tmp_path, wav_path)
+        # 注意：tts_output_path 不删除，留给前端访问
+        # 注意：tts_output_path 不删除，留给前端访问
 @csrf_exempt
 def finish_session(request):
-    """
-    结束对话，对 session 里所有问题进行详细分析并生成 PDF 供下载
-    """
     questions = request.session.pop("questions", [])
     if not questions:
         return JsonResponse({"error": "No dialogue yet"}, status=400)
@@ -140,6 +185,7 @@ def finish_session(request):
     pdf_io.seek(0)
     response = HttpResponse(pdf_io, content_type="application/pdf")
     response["Content-Disposition"] = 'attachment; filename="spoken_report.pdf"'
+    print("PDF generated successfully")
     return response
 
 # -------------- 小工具 --------------
@@ -151,6 +197,8 @@ def text_to_speech_file(self, text, outfile):
     self.tts_engine.runAndWait()
 def spoken_ai(request):
     return render(request, "spoken_ai.html")
+def login(request):
+    return render(request, "login.html")
 # spoken/views.py
 from datetime import datetime
 from reportlab.pdfgen import canvas   # pip install reportlab

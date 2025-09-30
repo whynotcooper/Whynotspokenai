@@ -186,7 +186,7 @@ class VoiceProcessingPipeline:
 # ====================== 快速测试 ======================
 if __name__ == "__main__":
 
-    wav = "Task1.mp3"
+    wav = "task5.mp3"
     pl = VoiceProcessingPipeline()
     result=pl.transcribe_audio(wav)
     print(result)

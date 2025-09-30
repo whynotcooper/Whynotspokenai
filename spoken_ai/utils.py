@@ -140,3 +140,54 @@ class TextAnalysisPipeline:
             results["analyse"] = analyse
 
         return results
+# tts_pipeline.py
+import pyttsx3
+import os
+
+
+
+
+def synthesize(text: str, output_path: str):
+    """
+    将英文文本合成语音，保存为 WAV 文件。
+    """
+    try:
+        print(f"[TTS] Starting synthesis: '{text}'")
+        
+        # 每次都创建新引擎，避免状态问题
+        engine = pyttsx3.init()
+        
+        # === 英文专用优化 ===
+        engine.setProperty('rate', 170)      # 语速：170 words/min（自然）
+        engine.setProperty('volume', 1.0)    # 音量：最大
+
+        # 选择英文语音
+        voices = engine.getProperty('voices')
+        en_voice = None
+        for voice in voices:
+            if 'en' in str(voice.languages).lower() or 'english' in voice.name.lower():
+                en_voice = voice
+                break
+        if en_voice:
+            engine.setProperty('voice', en_voice.id)
+        
+        # 确保输出目录存在
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        
+        engine.save_to_file(text, output_path)
+        engine.runAndWait()
+        
+        # 显式停止引擎
+        engine.stop()
+        
+        # 检查文件是否生成
+        if not os.path.exists(output_path):
+            raise RuntimeError("TTS failed: output file not created.")
+            
+        file_size = os.path.getsize(output_path)
+        print(f"[TTS] Synthesis completed: {output_path} ({file_size} bytes)")
+        return True
+        
+    except Exception as e:
+        print(f"[TTS ERROR] Synthesis failed: {e}")
+        raise RuntimeError(f"Text-to-speech synthesis failed: {e}")
