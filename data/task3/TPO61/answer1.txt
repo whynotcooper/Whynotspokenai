@@ -1,0 +1,7 @@
+The diffusion effect occurs in health studies when members of a group receiving a treatment accidentally
+ share information with a control group, making the study's results invalid. In the lecture, this is illustrated 
+ by a study on office exercises. Researchers had Group A perform daily stretches to reduce stiffness, while Group 
+ B continued working normally. Group A was instructed not to discuss the program. However, some Group A members were
+  overheard talking about the exercises' benefits by Group B workers, who then started doing them too. Consequently, 
+  since both groups ended up performing the exercises, the researcher couldn't determine if the program was truly effective,
+   demonstrating how unintended information sharing ruins the study's comparison, exactly as the diffusion effect describes.

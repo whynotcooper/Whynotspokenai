@@ -1,0 +1,139 @@
+<!-- templates/toefl_index.html -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>托福口语练习平台</title>
+  <!-- 引入 Font Awesome 图标 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+    }
+
+    body {
+      background: linear-gradient(135deg, #1a2a6c, #b21f1f, #1a2a6c);
+      color: white;
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 50px;
+    }
+
+    h1 {
+      font-size: 2.8rem;
+      margin-bottom: 10px;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+
+    .subtitle {
+      font-size: 1.2rem;
+      opacity: 0.9;
+    }
+
+    .tasks-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 30px;
+    }
+
+    .task-card {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 30px;
+      text-align: center;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      cursor: pointer;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .task-card:hover {
+      transform: translateY(-10px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .task-icon {
+      font-size: 3rem;
+      margin-bottom: 20px;
+      color: #ffd700;
+    }
+
+    .task-title {
+      font-size: 1.6rem;
+      margin-bottom: 12px;
+    }
+
+    .task-desc {
+      font-size: 1rem;
+      opacity: 0.85;
+      line-height: 1.5;
+    }
+
+    a {
+      text-decoration: none;
+      color: inherit;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>TOEFL Speaking Practice</h1>
+      <p class="subtitle">选择你要练习的口语任务</p>
+    </header>
+
+    <div class="tasks-grid">
+      <!-- Task 1 -->
+      <a href="{% url 'spoken_ai:task1_list' %}">
+        <div class="task-card">
+          <div class="task-icon"><i class="fas fa-microphone"></i></div>
+          <h2 class="task-title">Task 1</h2>
+          <p class="task-desc">独立口语：表达个人观点，45秒准备，60秒回答。</p>
+        </div>
+      </a>
+
+      <!-- Task 2 -->
+      <a href="{% url 'spoken_ai:task1_list' %}"> 
+        <div class="task-card">
+          <div class="task-icon"><i class="fas fa-book"></i></div>
+          <h2 class="task-title">Task 2</h2>
+          <p class="task-desc">综合口语：阅读+听力+口语，整合校园场景信息。</p>
+        </div>
+      </a>
+
+      <!-- Task 3 -->
+         <a href="{% url 'spoken_ai:task1_list' %}">
+        <div class="task-card">
+          <div class="task-icon"><i class="fas fa-brain"></i></div>
+          <h2 class="task-title">Task 3</h2>
+          <p class="task-desc">综合口语：学术概念+讲座举例，总结并解释。</p>
+        </div>
+      </a>
+
+      <!-- Task 4 -->
+        <a href="{% url 'spoken_ai:task1_list' %}">
+        <div class="task-card">
+          <div class="task-icon"><i class="fas fa-university"></i></div>
+          <h2 class="task-title">Task 4</h2>
+          <p class="task-desc">综合口语：纯学术讲座，提炼核心观点并复述。</p>
+        </div>
+      </a>
+    </div>
+  </div>
+</body>
+</html>

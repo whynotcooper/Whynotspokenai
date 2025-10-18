@@ -1,0 +1,2 @@
+ Explain how the example of leaf-cutter ants illustrates the concept of task
+ partitioning.

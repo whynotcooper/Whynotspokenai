@@ -1,0 +1,9 @@
+ NewDegree Navigator Web Site
+ Students must complete certain courses in their fields of study in order to meet the
+ requirements for graduation. Currently, students meet with academic advisors to
+ discuss these requirements. Soon, though, students will be able to use a new degree
+ navigator Web site to keep track of their requirements The Web site will make it
+ easier for students to monitor which courses they have already completed and which
+ ones they still need to take before graduating, so they can plan their schedules
+ accordingly Also, the Web site will help reduce the workload for academic advisors,
+ whowill not need to meet with students as often.

@@ -1,0 +1,10 @@
+ Generalization to Avoid Predators
+ For animals to avoid predators and stay safe, they need to be able to identify
+ which other animals might be dangerous predators. Animals can sometimes
+ recognize new predators by their similarity to predators they are familiar with.
+ This phenomenon is known as generalization. When they encounter an
+ unfamiliar animal that has the same characteristics as a known predator, they
+ generalize by behaving the same way they would to avoid the known predator.
+ An animal's ability to generalize can vary based or how similar the unfamiliar
+ animals are to the original predators; the more similar they are, the more likely
+ the animal is to generalize.

@@ -1,0 +1,2 @@
+Explain how the example of the eastern gray squirrel illustrates the concept of
+ deceptive caching

@@ -14,7 +14,9 @@ from reportlab.lib.styles import  getSampleStyleSheet
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 import io
-
+from django.shortcuts import render, get_object_or_404
+from .models import Task1Model
+from django.views.decorators.http import require_http_methods
 
 UPLOAD_DIR = os.path.join(settings.MEDIA_ROOT, 'audio')
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -67,8 +69,10 @@ def index(request):
 # 假设 VoiceTranscriptionPipeline 和 TextAnalysisPipeline 类已经定义好
 from .utils import synthesize as tts_synthesize  # ← 新增导入
 from .utils import VoiceTranscriptionPipeline, TextAnalysisPipeline
+from .utils import ToeflTaskAnalysisPipeline
 transcription_pipeline = VoiceTranscriptionPipeline()
 analysis_pipeline = TextAnalysisPipeline()
+analysis_task_pipeline = ToeflTaskAnalysisPipeline()
 @csrf_exempt
 def process_audio(request):
     if request.method != 'POST':
@@ -197,9 +201,201 @@ def text_to_speech_file(self, text, outfile):
     self.tts_engine.runAndWait()
 def spoken_ai(request):
     return render(request, "spoken_ai.html")
-def login(request):
-    return render(request, "login.html")
-# spoken/views.py
-from datetime import datetime
-from reportlab.pdfgen import canvas   # pip install reportlab
+def toefl_index(request):
+    return render(request, "toefl_index.html")
+from django.shortcuts import render, redirect
+from django.http import JsonResponse
+from django.views import View
+from django.contrib.auth.hashers import make_password
+from django.core.exceptions import ValidationError
+from .models import UserInfoModel
+import json
+
+class RegisterView(View):
+    """用户注册视图"""
+    
+    def get(self, request):
+        """GET请求返回注册页面"""
+        return render(request, 'register.html')
+    
+    def post(self, request):
+        """POST请求处理注册逻辑"""
+        try:
+            # 获取请求数据
+            if request.content_type == 'application/json':
+                data = json.loads(request.body)
+            else:
+                data = request.POST
+            
+            username = data.get('username', '').strip()
+            password = data.get('password', '').strip()
+            phone = data.get('phone', '').strip()
+            
+            # 基本数据验证
+            if not all([username, password, phone]):
+                return JsonResponse({
+                    'code': 400,
+                    'message': '用户名、密码和手机号不能为空',
+                    'data': None
+                })
+            
+            # 创建用户实例（不直接保存到数据库）
+            user = UserInfoModel(
+                username=username,
+                password=make_password(password),  # 密码加密
+                phone=phone
+            )
+            
+            # 完整验证模型字段
+            user.full_clean()
+            
+            # 保存到数据库
+            user.save()
+            
+            return JsonResponse({
+                'code': 200,
+                'message': '注册成功',
+                'data': {
+                    'user_id': user.id,
+                    'username': user.username,
+                    'phone': user.phone
+                }
+            })
+            
+        except ValidationError as e:
+            # 处理字段验证错误
+            error_messages = []
+            for field, errors in e.message_dict.items():
+                for error in errors:
+                    error_messages.append(f"{field}: {error}")
+            
+            return JsonResponse({
+                'code': 400,
+                'message': '; '.join(error_messages),
+                'data': None
+            })
+            
+        except Exception as e:
+            # 处理其他异常（如唯一约束冲突）
+            error_msg = str(e)
+            if 'username' in error_msg.lower() or 'username' in error_msg:
+                return JsonResponse({
+                    'code': 400,
+                    'message': '用户名已存在',
+                    'data': None
+                })
+            elif 'phone' in error_msg.lower() or 'phone' in error_msg:
+                return JsonResponse({
+                    'code': 400,
+                    'message': '手机号已存在',
+                    'data': None
+                })
+            else:
+                return JsonResponse({
+                    'code': 500,
+                    'message': f'注册失败: {error_msg}',
+                    'data': None
+                })
+
+# 如果需要函数视图版本
+def register(request):
+    if request.method == 'GET':
+        return render(request,'register.html')
+    else:
+        # 用户注册
+        print("register1111111")
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        phone = request.POST.get('phone')
+        print(username, password, phone, )
+        if not (username or password or phone ):
+            return JsonResponse({'code': 400, 'message': '缺少必传的参数'})
+        user = UserInfoModel.objects.filter(username=username).first()
+        if user:
+            return JsonResponse({'code': 400, 'message': '用户名已存在'})
+        user = UserInfoModel.objects.create(username=username, password=password, phone=phone)
+        request.session['login_in'] = True
+        request.session['username'] = user.username
+        request.session['user_id'] = user.id
+        return JsonResponse({'code': 200})
+
+def task1_list(request):
+    tasks = Task1Model.objects.all().order_by('name')
+    return render(request, 'toefl_task1.html', {'tasks': tasks})
+
+def show_task1(request, task_id):
+    task = Task1Model.objects.get(id=task_id)
+    return render(request, 'show_task1.html', {'task': task})
+
+# views.py
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def process_task_audio(request, task_id):
+    """
+    接收音频，转写后返回文本供用户编辑。
+    """
+    task = get_object_or_404(Task1Model, id=task_id)
+    audio = request.FILES.get('audio')
+    if not audio:
+        return JsonResponse({'error': 'No audio file provided.'}, status=400)
+
+    tmp_path, wav_path = _save_and_transcode(audio)
+    try:
+        transcription = transcription_pipeline.transcribe_audio(wav_path, language="auto")
+        if not transcription.strip():
+            return JsonResponse({'error': 'Transcription is empty.'}, status=400)
+        return JsonResponse({
+            'success': True,
+            'transcription': transcription
+        })
+    except Exception as e:
+        import traceback
+        print(f"[ERROR] Transcription failed: {e}\n{traceback.format_exc()}")
+        return JsonResponse({'error': str(e)}, status=500)
+    finally:
+        _safe_remove(tmp_path, wav_path)
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
+import json
+from .utils import generate_pdf_report  # 你需要实现这个函数
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def analyse_task1(request, task_id):
+    """
+    接收用户确认后的文本，进行 AI 分析并生成 PDF。
+    """
+    task = get_object_or_404(Task1Model, id=task_id)
+    try:
+        data = json.loads(request.body)
+        student_answer = data.get('student_answer', '').strip()
+        if not student_answer:
+            return JsonResponse({'error': 'Empty answer'}, status=400)
+
+        # AI 分析
+        feedback = analysis_task_pipeline.analyze_task1(
+            question=task.readingtext or "No prompt provided.",
+            student_answer=student_answer
+        )
+
+        # 生成 PDF（你需要实现 generate_pdf_report）
+        pdf_url = generate_pdf_report(
+            task=task,
+            student_answer=student_answer,
+            feedback=feedback
+        )
+
+        return JsonResponse({
+            'success': True,
+            'feedback': feedback,
+            'pdf_url': pdf_url
+        })
+
+    except Exception as e:
+        import traceback
+        print(f"[ERROR] Analysis failed: {e}\n{traceback.format_exc()}")
+        return JsonResponse({'error': str(e)}, status=500)
+
 

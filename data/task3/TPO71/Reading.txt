@@ -1,0 +1,9 @@
+Masking
+ The impact of environmental noise is a serious concern to scientists because the
+ presence of excessive noise in an animal's environment can threaten its survival.
+ Animals regularly produce and receive sounds in their daily lives for a variety of
+ purposes, such as communication or the search for food. When environmental
+ sounds are louder than sounds that the animal uses, the result is known as masking.
+ Masking is a covering over of one sound with another sound Scientists believe that
+ masking impedes animals' ability to transmit or receive biologically important signals
+ that are essential for survival.

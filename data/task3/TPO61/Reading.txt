@@ -1,0 +1,9 @@
+Diffusion Effect in Health Studies
+ Whenhealth education experts want to test the effectiveness of a program designed
+ to improve a particular health condition, they often do a study with two groups of
+ people. One group participates in the program, while the other does not： and the
+ researchers compare the two groups to see if the program was effective in
+ improving health. However, if the groups come into contact during the study, a
+ diffusion effect may occur Members of the group participating in the program may
+ mistakenly share information about it with members of the other group This often
+ leads to the results of the study being useless

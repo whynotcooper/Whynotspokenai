@@ -1,0 +1,2 @@
+Explain how the example from the lecture illustrates the technique of behavioral 
+exposure 

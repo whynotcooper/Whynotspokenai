@@ -1,0 +1,222 @@
+<!-- templates/toefl_task1.html -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>托福口语 Task1 题库 | TOEFL Speaking Practice</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4edf9 100%);
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            padding: 40px 20px;
+            margin-bottom: 30px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 6px;
+            background: linear-gradient(90deg, #3498db, #2980b9, #1abc9c);
+        }
+
+        h1 {
+            font-size: 2.4rem;
+            color: #2c3e50;
+            margin-bottom: 12px;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            color: #7f8c8d;
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .task-grid {
+            display: grid;
+            gap: 16px;
+        }
+
+        .task-card {
+            background: white;
+            border-radius: 14px;
+            padding: 20px 24px;
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+            border: 1px solid #eef2f7;
+        }
+
+        .task-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(52, 152, 219, 0.25);
+            border-color: #3498db;
+        }
+
+        .task-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 20px;
+            color: white;
+            font-size: 20px;
+        }
+
+        .task-info {
+            flex: 1;
+        }
+
+        .task-info h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 6px;
+            line-height: 1.4;
+        }
+
+        .task-meta {
+            display: flex;
+            align-items: center;
+            font-size: 0.9rem;
+            color: #95a5a6;
+        }
+
+        .task-meta i {
+            margin-right: 6px;
+            font-size: 0.95rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            color: #bdc3c7;
+            margin-bottom: 20px;
+        }
+
+        .empty-state h2 {
+            font-size: 1.8rem;
+            color: #7f8c8d;
+            margin-bottom: 12px;
+        }
+
+        .empty-state p {
+            color: #95a5a6;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            color: #95a5a6;
+            font-size: 0.95rem;
+        }
+
+        @media (max-width: 600px) {
+            header {
+                padding: 30px 15px;
+            }
+            h1 {
+                font-size: 2rem;
+            }
+            .task-card {
+                padding: 16px;
+            }
+            .task-icon {
+                width: 40px;
+                height: 40px;
+                font-size: 18px;
+                margin-right: 16px;
+            }
+            .task-info h2 {
+                font-size: 1.15rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-microphone-alt"></i> 托福口语 Task1 题库</h1>
+            <p class="subtitle">独立口语练习 · 表达观点 · 提升流利度</p>
+        </header>
+
+        {% if tasks %}
+            <div class="task-grid">
+                {% for task in tasks %}
+                    <a href="{% url 'spoken_ai:show_task1' task.id %}" class="task-card">
+                        <div class="task-icon">
+                            <i class="fas fa-comment-dots"></i>
+                        </div>
+                        <div class="task-info">
+                            <h2>{{ task.name }}</h2>
+                            <div class="task-meta">
+                                <i class="fas fa-tag"></i>
+                                {% if task.category %}
+                                    {{ task.category.name }}
+                                {% else %}
+                                    通用题型
+                                {% endif %}
+                            </div>
+                        </div>
+                    </a>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <i class="fas fa-inbox"></i>
+                <h2>暂无任务数据</h2>
+                <p>请先通过管理后台或数据导入脚本添加托福 Task1 练习题目。</p>
+            </div>
+        {% endif %}
+
+        <footer>
+            <p>© 2025 TOEFL Speaking Practice Platform</p>
+        </footer>
+    </div>
+</body>
+</html>

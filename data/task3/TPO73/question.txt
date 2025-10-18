@@ -1,0 +1,2 @@
+Explain how the example of minnows and trout illustrates the concept of
+ generalization to avoid predators.

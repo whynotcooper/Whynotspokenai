@@ -1,0 +1,242 @@
+<!-- templates/show_task1.html -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ task.name }}</title>
+    <style>
+        body { font-family: "Microsoft YaHei", sans-serif; margin: 40px; line-height: 1.6; }
+        h1 { color: #2980b9; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        .section { margin: 25px 0; }
+        .section h2 {
+            color: #2c3e50;
+            font-size: 20px;
+            margin-bottom: 8px;
+        }
+        .section p, .section textarea {
+            background: #f9f9f9;
+            padding: 12px;
+            border-left: 4px solid #3498db;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        textarea {
+            border: 1px solid #ccc;
+            resize: vertical;
+            min-height: 100px;
+        }
+        .hidden { display: none; }
+        .btn {
+            padding: 8px 16px;
+            margin: 5px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn:hover { background: #2980b9; }
+        .btn-secondary { background: #7f8c8d; }
+        .btn-secondary:hover { background: #95a5a6; }
+        .timer { font-weight: bold; color: #e74c3c; }
+        .back {
+            display: inline-block;
+            margin-top: 20px;
+            color: #7f8c8d;
+            text-decoration: none;
+        }
+        .back:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <h1>{{ task.name }}</h1>
+
+    <!-- 1. 题目（始终显示） -->
+    <div class="section">
+        <h2>阅读文本</h2>
+        <p>{{ task.readingtext|default:"无" }}</p>
+    </div>
+
+    <!-- 2. 录音区域 -->
+    <div class="section" id="recordSection">
+        <h2>请回答（45秒）</h2>
+        <p>点击“开始录音”后，你有 45 秒时间回答。</p>
+        <button id="startBtn" class="btn">开始录音</button>
+        <span id="timer" class="timer hidden">剩余: <span id="countdown">45</span> 秒</span>
+        <button id="stopBtn" class="btn btn-secondary hidden">提前结束</button>
+        <div id="recordStatus" style="margin-top: 10px;"></div>
+    </div>
+
+    <!-- 3. 转写文本编辑区（初始隐藏） -->
+    <div class="section hidden" id="editSection">
+        <h2>你的回答（可编辑）</h2>
+        <textarea id="transcriptionText" placeholder="语音转写结果将显示在这里..."></textarea>
+        <br>
+        <button id="confirmBtn" class="btn">确认最终答案并生成报告</button>
+    </div>
+
+    <!-- 4. AI 反馈 + PDF 下载（初始隐藏） -->
+    <div class="section hidden" id="feedbackSection">
+        <h2>AI 评分报告</h2>
+        <div id="feedbackContent"></div>
+        <br>
+        <a id="pdfLink" target="_blank" style="display:none;">📥 下载 PDF 报告</a>
+    </div>
+
+    <!-- 5. 显示参考答案按钮 -->
+    <div class="section">
+        <button id="showAnswersBtn" class="btn btn-secondary">显示参考答案与解题思路</button>
+    </div>
+
+    <!-- 6. 参考答案区域（初始隐藏） -->
+    <div class="section hidden" id="answersSection">
+        <h2>参考答案1</h2>
+        <p>{{ task.answertext1 }}</p>
+        <h2>参考答案2</h2>
+        <p>{{ task.answertext2 }}</p>
+        <h2>解题思路</h2>
+        <p>{{ task.reasontext }}</p>
+    </div>
+
+    <a href="{% url 'spoken_ai:task1_list' %}" class="back">← 返回任务列表</a>
+
+    <script>
+        let mediaRecorder;
+        let audioChunks = [];
+        let countdownInterval = null;
+        const task_id = {{ task.id }};
+
+        document.getElementById('startBtn').addEventListener('click', startRecording);
+        document.getElementById('stopBtn').addEventListener('click', stopRecording);
+        document.getElementById('confirmBtn').addEventListener('click', confirmAnswer);
+        document.getElementById('showAnswersBtn').addEventListener('click', showAnswers);
+
+        function startRecording() {
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(stream => {
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+
+                    mediaRecorder.ondataavailable = event => {
+                        audioChunks.push(event.data);
+                    };
+
+                    mediaRecorder.onstop = () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                        uploadAudio(audioBlob);
+                        stream.getTracks().forEach(track => track.stop());
+                    };
+
+                    mediaRecorder.start();
+                    document.getElementById('startBtn').classList.add('hidden');
+                    document.getElementById('timer').classList.remove('hidden');
+                    document.getElementById('stopBtn').classList.remove('hidden');
+                    document.getElementById('recordStatus').innerText = '正在录音...';
+
+                    // 45秒倒计时
+                    let timeLeft = 45;
+                    document.getElementById('countdown').innerText = timeLeft;
+                    countdownInterval = setInterval(() => {
+                        timeLeft--;
+                        document.getElementById('countdown').innerText = timeLeft;
+                        if (timeLeft <= 0) {
+                            stopRecording();
+                        }
+                    }, 1000);
+                })
+                .catch(err => {
+                    document.getElementById('recordStatus').innerText = '录音失败: ' + err.message;
+                });
+        }
+
+        function stopRecording() {
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+        }
+
+        function uploadAudio(blob) {
+            const formData = new FormData();
+            formData.append('audio', blob, 'answer.webm');
+        
+            fetch(`process_task_audio/`, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('transcriptionText').value = data.transcription;
+                    document.getElementById('editSection').classList.remove('hidden');
+                    document.getElementById('recordSection').classList.add('hidden');
+                } else {
+                    alert('语音处理失败: ' + data.error);
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('上传失败');
+            });
+        }
+
+        function confirmAnswer() {
+            const finalText = document.getElementById('transcriptionText').value.trim();
+            if (!finalText) {
+                alert('请输入你的回答');
+                return;
+            }
+
+            fetch(`analyse_task1/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({ student_answer: finalText })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // 显示反馈
+                    let html = `<p><strong>评分:</strong> ${data.feedback.score || 'N/A'}</p>`;
+                    html += `<p><strong>问题:</strong> ${data.feedback.issues || ''}</p>`;
+                    html += `<p><strong>建议:</strong> ${data.feedback.reason || ''}</p>`;
+                    if (data.feedback.phrases) {
+                        html += `<p><strong>推荐短语:</strong> ${data.feedback.phrases.join(', ')}</p>`;
+                    }
+                    document.getElementById('feedbackContent').innerHTML = html;
+
+                    // 显示 PDF 链接
+                    if (data.pdf_url) {
+                        const link = document.getElementById('pdfLink');
+                        link.href = data.pdf_url;
+                        link.style.display = 'inline';
+                    }
+
+                    document.getElementById('feedbackSection').classList.remove('hidden');
+                } else {
+                    alert('分析失败: ' + data.error);
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('提交失败');
+            });
+        }
+
+        function showAnswers() {
+            document.getElementById('answersSection').classList.remove('hidden');
+            document.getElementById('showAnswersBtn').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
