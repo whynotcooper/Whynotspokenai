@@ -21,4 +21,6 @@ urlpatterns = [
     path('task1/<int:task_id>/process_task_audio/', views.process_task_audio, name='process_task_audio'),
     path('task1/<int:task_id>/analyse_task1/', views.analyse_task1, name='analyse_task1'),
     path('task1/', views.task1_list, name='task1_list'),
+    path('task2/', views.task2_list, name='task2_list'),
+    path('task2/<int:task_id>/', views.show_task2, name='show_task2'),
 ]  

@@ -317,111 +317,282 @@ Student's Response:
             print(f"[ERROR] Task1 Analysis Failed: {error_msg}")
             self._log_interaction("task1", input_data, error=error_msg)
             raise
-# utils.py
-# utils.py
+import os
+import io
+from django.conf import settings
+from reportlab.lib.pagesizes import A4
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import A4
-from django.conf import settings
-import os
 from urllib.parse import urljoin
 
-def generate_pdf_report(task, student_answer, feedback):
-    # 注册中文字体（建议只注册一次，此处为简化）
-    font_path = os.path.join(settings.BASE_DIR, 'font', 'NotoSansSC-Regular.ttf')
-    if not hasattr(generate_pdf_report, '_font_registered'):
-        pdfmetrics.registerFont(TTFont('NotoSansSC', font_path))
-        generate_pdf_report._font_registered = True
+# 全局变量
+_font_registered = False
+_chinese_styles = None
 
-    filename = f"task1_{task.id}_report.pdf"
-    filepath = os.path.join(settings.MEDIA_ROOT, 'reports', filename)
-    os.makedirs(os.path.dirname(filepath), exist_ok=True)
-
-    c = canvas.Canvas(filepath, pagesize=A4)
-    width, height = A4
-    y = height - 50
-    left_margin = 50
-
-    # 统一使用中文字体
-    def draw_text(text, size=12, bold=False):
-        nonlocal y
-        font_name = "NotoSansSC-Bold" if bold else "NotoSansSC"
+class PDFStyleManager:
+    """PDF样式管理器"""
+    
+    @staticmethod
+    def _register_chinese_font():
+        """注册中文字体"""
+        global _font_registered, _chinese_styles
+        
+        if _font_registered:
+            return _chinese_styles
+        
+        # Windows 系统字体路径
+        windows_font_paths = [
+            'C:/Windows/Fonts/simhei.ttf',      # 黑体
+            'C:/Windows/Fonts/msyh.ttc',        # 微软雅黑
+            'C:/Windows/Fonts/simsun.ttc',      # 宋体
+        ]
+        
+        font_path = None
+        font_name = 'ChineseFont'
+        
+        # 查找可用的字体文件
+        for path in windows_font_paths:
+            if os.path.exists(path):
+                font_path = path
+                print(f"找到字体文件: {path}")
+                break
+        
+        if not font_path:
+            # 如果系统字体不存在，尝试项目字体
+            project_font_path = os.path.join(settings.BASE_DIR, 'font', 'NotoSansSC-Regular.ttf')
+            if os.path.exists(project_font_path):
+                font_path = project_font_path
+                print(f"找到项目字体文件: {project_font_path}")
+        
+        if not font_path:
+            raise FileNotFoundError("未找到可用的中文字体文件")
+        
         try:
-            c.setFont(font_name, size)
-        except:
-            c.setFont("NotoSansSC", size)  # fallback
-        c.drawString(left_margin, y, text)
-        y -= 20 if size >= 12 else 16
+            # 注册字体
+            pdfmetrics.registerFont(TTFont(font_name, font_path))
+            print(f"成功注册字体: {font_name}")
+        except Exception as e:
+            raise Exception(f"字体注册失败: {e}")
+        
+        # 创建中文样式
+        base_styles = getSampleStyleSheet()
+        chinese_styles = {
+            'ChineseNormal': ParagraphStyle(
+                name='ChineseNormal',
+                fontName=font_name,
+                fontSize=11,
+                leading=16,
+                spaceAfter=6,
+                firstLineIndent=20  # 首行缩进
+            ),
+            'ChineseHeading': ParagraphStyle(
+                name='ChineseHeading',
+                fontName=font_name,
+                fontSize=14,
+                leading=18,
+                spaceAfter=12,
+                spaceBefore=12,
+                textColor='#333333'
+            ),
+            'ChineseTitle': ParagraphStyle(
+                name='ChineseTitle',
+                fontName=font_name,
+                fontSize=16,
+                leading=22,
+                spaceAfter=18,
+                spaceBefore=18,
+                alignment=1,  # 居中
+                textColor='#000000'
+            ),
+            'ChineseBold': ParagraphStyle(
+                name='ChineseBold',
+                fontName=font_name,
+                fontSize=11,
+                leading=16,
+                spaceAfter=6,
+                textColor='#222222'
+            )
+        }
+        
+        # 将样式添加到样式表
+        for style_name, style in chinese_styles.items():
+            base_styles.add(style)
+        
+        _font_registered = True
+        _chinese_styles = chinese_styles
+        
+        return chinese_styles
+    
+    @classmethod
+    def get_styles(cls):
+        """获取样式"""
+        if not _font_registered:
+            return cls._register_chinese_font()
+        return _chinese_styles
+    
+    @classmethod
+    def get_style(cls, style_name='ChineseNormal'):
+        """获取指定样式"""
+        styles = cls.get_styles()
+        return styles.get(style_name, styles['ChineseNormal'])
 
-    # 标题
-    c.setFont("NotoSansSC-Bold", 16)
-    c.drawString(left_margin, y, f"TOEFL 口语 Task 1 评分报告：{task.name}")
-    y -= 30
 
-    # 题目
-    draw_text(f"题目：{task.readingtext or '无'}", bold=True)
-    y -= 10
+class PDFContentBuilder:
+    """PDF内容构建器"""
+    
+    def __init__(self, styles):
+        self.styles = styles
+        self.story = []
+    
+    def add_title(self, text):
+        """添加标题"""
+        self.story.append(Paragraph(text, self.styles['ChineseTitle']))
+        self.add_spacer(12)
+    
+    def add_heading(self, text):
+        """添加小标题"""
+        self.story.append(Paragraph(text, self.styles['ChineseHeading']))
+        self.add_spacer(6)
+    
+    def add_paragraph(self, text, style='ChineseNormal'):
+        """添加段落"""
+        if text and text.strip():
+            self.story.append(Paragraph(text, self.styles[style]))
+            self.add_spacer(6)
+    
+    def add_bullet_point(self, label, content, style='ChineseNormal'):
+        """添加带项目符号的条目"""
+        if content and content.strip():
+            text = f"• <b>{label}：</b>{content}"
+            self.add_paragraph(text, style)
+    
+    def add_spacer(self, height=12):
+        """添加间距"""
+        self.story.append(Spacer(1, height))
+    
+    def get_content(self):
+        """获取内容"""
+        return self.story
 
-    # 学生回答
-    draw_text("你的回答：", bold=True)
-    y += 5  # 微调
-    c.setFont("NotoSansSC", 11)
-    lines = student_answer.split('\n')
-    for line in lines:
-        if y < 50:  # 防止超出页面
-            c.showPage()
-            y = height - 50
-        c.drawString(left_margin, y, line[:80])  # 简单截断长行
-        y -= 16
-    y -= 10
 
-    # AI 参考答案
-    model_answer = feedback.get('answer', '').strip()
-    if model_answer:
-        draw_text("AI 参考答案：", bold=True)
-        y += 5
-        c.setFont("NotoSansSC", 11)
-        for line in model_answer.split('\n'):
-            if y < 50:
-                c.showPage()
-                y = height - 50
-            c.drawString(left_margin, y, line[:80])
-            y -= 16
-        y -= 10
+class FeedbackPDFGenerator:
+    """反馈PDF生成器"""
+    
+    @staticmethod
+    def _clean_text(text):
+        """清理文本"""
+        if not text:
+            return ""
+        # 移除多余的空白字符
+        cleaned = ' '.join(str(text).split())
+        return cleaned
+    
+    @staticmethod
+    def _format_list_data(data):
+        """格式化列表数据"""
+        if not data:
+            return ""
+        if isinstance(data, list):
+            # 过滤空值并连接
+            return "；".join([str(item).strip() for item in data if str(item).strip()])
+        return str(data).strip()
+    
+    @classmethod
+    def generate_pdf_report(cls, task, student_answer, feedback):
+        """生成PDF报告"""
+        
+        # 获取样式
+        styles = PDFStyleManager.get_styles()
+        
+        # 准备文件路径
+        filename = f"task1_{task.id}_report.pdf"
+        filepath = os.path.join(settings.MEDIA_ROOT, 'reports', filename)
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        
+        # 创建PDF文档
+        pdf_io = io.BytesIO()
+        doc = SimpleDocTemplate(
+            pdf_io, 
+            pagesize=A4, 
+            topMargin=30, 
+            bottomMargin=30,
+            leftMargin=40,
+            rightMargin=40
+        )
+        
+        # 构建内容
+        builder = PDFContentBuilder(styles)
+        
+        # 1. 报告标题
+        builder.add_title(f"TOEFL 口语 Task 1 评分报告：{task.name}")
+        
+        # 2. 题目信息
+        reading_text = cls._clean_text(task.readingtext)
+        if reading_text:
+            builder.add_heading("题目内容")
+            builder.add_paragraph(reading_text)
+        
+        # 3. 学生回答
+        builder.add_heading("你的回答")
+        student_answer_clean = cls._clean_text(student_answer) or "（无回答）"
+        builder.add_paragraph(student_answer_clean)
+        builder.add_spacer(18)
+        
+        # 4. AI 参考答案
+        model_answer = cls._clean_text(feedback.get('answer', ''))
+        if model_answer:
+            builder.add_heading("AI 参考答案")
+            builder.add_paragraph(model_answer)
+            builder.add_spacer(12)
+        
+        # 5. 问题与建议
+        issues = cls._clean_text(feedback.get('issues', ''))
+        reason = cls._clean_text(feedback.get('reason', ''))
+        
+        if issues or reason:
+            builder.add_heading("问题与建议")
+            if issues:
+                builder.add_bullet_point("问题", issues)
+            if reason:
+                builder.add_bullet_point("建议", reason)
+            builder.add_spacer(12)
+        
+        # 6. 推荐短语
+        phrases = feedback.get('phrases')
+        if phrases:
+            phrase_text = cls._format_list_data(phrases)
+            if phrase_text:
+                builder.add_heading("推荐短语")
+                builder.add_paragraph(phrase_text)
+                builder.add_spacer(12)
+        
+        # 7. 推荐句型
+        sentences = feedback.get('sentences')
+        if sentences:
+            sentence_text = cls._format_list_data(sentences)
+            if sentence_text:
+                builder.add_heading("推荐句型")
+                builder.add_paragraph(sentence_text)
+        
+        # 构建PDF
+        try:
+            doc.build(builder.get_content())
+            
+            # 写入文件
+            with open(filepath, 'wb') as f:
+                f.write(pdf_io.getvalue())
+            
+            print(f"PDF报告生成成功: {filename}")
+            return urljoin(settings.MEDIA_URL, f'reports/{filename}')
+            
+        except Exception as e:
+            print(f"PDF生成失败: {e}")
+            raise
 
-    # 问题与建议
-    issues = feedback.get('issues', '').strip()
-    reason = feedback.get('reason', '').strip()
-    if issues or reason:
-        draw_text("问题与建议：", bold=True)
-        if issues:
-            c.setFont("NotoSansSC", 11)
-            c.drawString(left_margin, y, f"• 问题：{issues}")
-            y -= 18
-        if reason:
-            c.setFont("NotoSansSC", 11)
-            c.drawString(left_margin, y, f"• 建议：{reason}")
-            y -= 18
-        y -= 10
 
-    # 推荐短语
-    phrases = feedback.get('phrases')
-    if phrases:
-        draw_text("推荐短语：", bold=True)
-        c.setFont("NotoSansSC", 11)
-        phrase_text = "；".join(phrases) if isinstance(phrases, list) else str(phrases)
-        c.drawString(left_margin, y, phrase_text[:100] + ("..." if len(phrase_text) > 100 else ""))
-        y -= 20
-
-    # 推荐句型
-    sentences = feedback.get('sentences')
-    if sentences:
-        draw_text("推荐句型：", bold=True)
-        c.setFont("NotoSansSC", 11)
-        sent_text = "；".join(sentences) if isinstance(sentences, list) else str(sentences)
-        c.drawString(left_margin, y, sent_text[:100] + ("..." if len(sent_text) > 100 else ""))
-        y -= 20
-
-    c.save()
-    return urljoin(settings.MEDIA_URL, f'reports/{filename}')
+# 向后兼容的快捷函数
+def generate_pdf_report(task, student_answer, feedback):
+    """生成PDF报告（快捷函数）"""
+    return FeedbackPDFGenerator.generate_pdf_report(task, student_answer, feedback)

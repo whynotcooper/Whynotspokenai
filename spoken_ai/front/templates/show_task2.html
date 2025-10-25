@@ -1,0 +1,227 @@
+<!-- templates/show_task2.html -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ task.name }} | TOEFL Task2</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #f9f9f9 0%, #eef5ff 100%);
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 20px;
+            margin-bottom: 30px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 6px;
+            background: linear-gradient(90deg, #e74c3c, #c0392b, #e67e22);
+        }
+
+        h1 {
+            font-size: 2rem;
+            color: #2c3e50;
+            margin-bottom: 12px;
+        }
+
+        .section {
+            background: white;
+            border-radius: 14px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+        }
+
+        .section h2 {
+            font-size: 1.4rem;
+            color: #2c3e50;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section h2 i {
+            color: #e74c3c;
+        }
+
+        .section-content {
+            background: #f8fafc;
+            padding: 16px;
+            border-radius: 10px;
+            border-left: 4px solid #e74c3c;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 1.05rem;
+            line-height: 1.7;
+        }
+
+        .audio-player {
+            margin-top: 12px;
+        }
+
+        .hidden-content {
+            display: none;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: opacity 0.2s;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn-reveal {
+            margin-top: 16px;
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: #7f8c8d;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .back-link:hover {
+            color: #3498db;
+            text-decoration: underline;
+        }
+
+        @media (max-width: 600px) {
+            .section {
+                padding: 18px;
+            }
+            h1 {
+                font-size: 1.7rem;
+            }
+            .section h2 {
+                font-size: 1.25rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-headphones"></i> {{ task.name }}</h1>
+        </header>
+
+        <!-- 阅读文本 -->
+        <div class="section">
+            <h2><i class="fas fa-book"></i> 阅读文本（校园公告）</h2>
+            <div class="section-content">
+                {{ task.readingtext|default:"无阅读内容" }}
+            </div>
+        </div>
+
+        <!-- 问题 -->
+        <div class="section">
+            <h2><i class="fas fa-question-circle"></i> 问题</h2>
+            <div class="section-content">
+                {{ task.questiontext|default:"无问题描述" }}
+            </div>
+        </div>
+
+        <!-- 听力音频 -->
+        <div class="section">
+            <h2><i class="fas fa-headphones"></i> 听力材料</h2>
+            <div class="audio-player">
+                {% if task.audio %}
+                    <audio controls style="width: 100%; height: 50px;">
+                        <source src="{{ task.audio.url }}" type="audio/mp4">
+                        <source src="{{ task.audio.url }}" type="audio/mpeg">
+                        您的浏览器不支持音频播放。
+                    </audio>
+                {% else %}
+                    <p style="color: #e74c3c;">⚠️ 未上传听力音频</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 隐藏内容区域 -->
+        <div class="section">
+            <button id="toggleAnswersBtn" class="btn btn-reveal">
+                <i class="fas fa-eye"></i> 显示参考答案与解题思路
+            </button>
+
+            <div id="hiddenAnswers" class="hidden-content">
+                <h2><i class="fas fa-lightbulb"></i> 参考答案1</h2>
+                <div class="section-content">
+                    {{ task.answertext1|default:"无答案" }}
+                </div>
+
+                <h2 style="margin-top: 20px;"><i class="fas fa-lightbulb"></i> 参考答案2</h2>
+                <div class="section-content">
+                    {{ task.answertext2|default:"无答案" }}
+                </div>
+
+                <h2 style="margin-top: 20px;"><i class="fas fa-graduation-cap"></i> 解题思路</h2>
+                <div class="section-content">
+                    {{ task.reasontext|default:"无解题思路" }}
+                </div>
+            </div>
+        </div>
+
+        <a href="{% url 'spoken_ai:task2_list' %}" class="back-link">
+            ← 返回 Task2 题库列表
+        </a>
+    </div>
+
+    <script>
+        document.getElementById('toggleAnswersBtn').addEventListener('click', function() {
+            const hiddenDiv = document.getElementById('hiddenAnswers');
+            const btn = this;
+            if (hiddenDiv.style.display === 'none' || hiddenDiv.style.display === '') {
+                hiddenDiv.style.display = 'block';
+                btn.innerHTML = '<i class="fas fa-eye-slash"></i> 隐藏参考答案';
+            } else {
+                hiddenDiv.style.display = 'none';
+                btn.innerHTML = '<i class="fas fa-eye"></i> 显示参考答案与解题思路';
+            }
+        });
+    </script>
+</body>
+</html>

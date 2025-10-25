@@ -16,6 +16,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 import io
 from django.shortcuts import render, get_object_or_404
 from .models import Task1Model
+from .models import Task2Model
 from django.views.decorators.http import require_http_methods
 
 UPLOAD_DIR = os.path.join(settings.MEDIA_ROOT, 'audio')
@@ -209,6 +210,7 @@ from django.views import View
 from django.contrib.auth.hashers import make_password
 from django.core.exceptions import ValidationError
 from .models import UserInfoModel
+
 import json
 
 class RegisterView(View):
@@ -322,11 +324,16 @@ def register(request):
 def task1_list(request):
     tasks = Task1Model.objects.all().order_by('name')
     return render(request, 'toefl_task1.html', {'tasks': tasks})
+def task2_list(request):
+    tasks = Task2Model.objects.all().order_by('name')
+    return render(request, 'toefl_task2.html', {'tasks': tasks})
 
 def show_task1(request, task_id):
     task = Task1Model.objects.get(id=task_id)
     return render(request, 'show_task1.html', {'task': task})
-
+def show_task2(request, task_id):
+    task = Task2Model.objects.get(id=task_id)
+    return render(request, 'show_task2.html', {'task': task})
 # views.py
 
 @csrf_exempt

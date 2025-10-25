@@ -110,3 +110,36 @@ class Task1Model(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class Task2Model(models.Model):
+    name = models.CharField(max_length=200, verbose_name='任务名称')
+    
+    # 阅读部分：校园公告/通知
+    readingtext = models.TextField(verbose_name='阅读文本（公告）')
+    
+    # 听力部分
+    audio = models.FileField(upload_to='task2_audio/', verbose_name='听力音频 (m4a)')
+    listeningtext = models.TextField(verbose_name='听力文本（学生观点）')
+    
+    # 问题 & 答案
+    questiontext = models.TextField(verbose_name='问题')
+    answertext1 = models.TextField(verbose_name='答案1')
+    answertext2 = models.TextField(verbose_name='答案2')
+    reasontext = models.TextField(verbose_name='解题思路')
+
+    # 分类（可选，与 Task1 共用）
+    category = models.ForeignKey(
+        TaskCategory,
+        on_delete=models.CASCADE,
+        related_name='task2_tasks',
+        verbose_name='所属类别'
+    )
+
+    class Meta:
+        db_table = 'db_task2'
+        verbose_name = '任务2'
+        verbose_name_plural = verbose_name
+
+    def __str__(self):
+        return self.name
