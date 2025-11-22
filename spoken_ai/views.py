@@ -22,7 +22,7 @@ from django.views.decorators.http import require_http_methods
 UPLOAD_DIR = os.path.join(settings.MEDIA_ROOT, 'audio')
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-def _save_and_transcode(audio):
+def _save_and_transcode(audio):# 用来转录语音为wav格式
     """返回 (tmp_path, wav_path)"""
     if audio.size == 0:
         raise ValueError("上传的音频文件为空")
@@ -75,7 +75,7 @@ transcription_pipeline = VoiceTranscriptionPipeline()
 analysis_pipeline = TextAnalysisPipeline()
 analysis_task_pipeline = ToeflTaskAnalysisPipeline()
 @csrf_exempt
-def process_audio(request):
+def process_audio(request):# 用来处理上传的音频文件变成文本文件
     if request.method != 'POST':
         return JsonResponse({'error': 'POST only'}, status=405)
 
@@ -142,7 +142,7 @@ def process_audio(request):
         # 注意：tts_output_path 不删除，留给前端访问
         # 注意：tts_output_path 不删除，留给前端访问
 @csrf_exempt
-def finish_session(request):
+def finish_session(request):# 这里其实没有做好，后续用来可以连续对话，分析
     questions = request.session.pop("questions", [])
     if not questions:
         return JsonResponse({"error": "No dialogue yet"}, status=400)
@@ -200,9 +200,9 @@ def finish_session(request):
 def text_to_speech_file(self, text, outfile):
     self.tts_engine.save_to_file(text, outfile)
     self.tts_engine.runAndWait()
-def spoken_ai(request):
+def spoken_ai(request): # spoken_ai.html ，第一个主页面
     return render(request, "spoken_ai.html")
-def toefl_index(request):
+def toefl_index(request):  # toefl_index.html ，第二个主页面/toefl页面
     return render(request, "toefl_index.html")
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
@@ -404,5 +404,94 @@ def analyse_task1(request, task_id):
         import traceback
         print(f"[ERROR] Analysis failed: {e}\n{traceback.format_exc()}")
         return JsonResponse({'error': str(e)}, status=500)
+def solve_followup(request):
+    """
+    接收前端 follow-up 追问，调用 AI 追问 agent，并把结果以 JSON 返回给页面。
+    """
+    try:
+        data = json.loads(request.body.decode("utf-8"))
+    except json.JSONDecodeError:
+        return JsonResponse(
+            {"success": False, "error": "请求数据格式错误（JSON 解析失败）"},
+            status=400
+        )
+
+    # 学生的追问（中英文都可以）
+    student_question = (data.get("message") or "").strip()
+    print("学生追问：", student_question)
+    # 上下文字段（readingtext + student_answer）
+    context = data.get("context") or {}
+    reading_text = (context.get("readingtext") or "").strip()
+    student_answer = (context.get("student_answer") or "").strip()
+
+    if not student_question:
+        return JsonResponse(
+            {"success": False, "error": "追问内容不能为空。"},
+            status=400
+        )
+
+    # 调用你已经写好的追问 agent
+    try:
+        print("上下文字段：", reading_text, student_answer)
+        feedback = analysis_task_pipeline.answer_followup_question(
+            reading_text=reading_text,
+            student_answer=student_answer,
+            student_question=student_question,
+            temperature=0.3,
+            log=True,
+        )
+    except Exception as e:
+        # LLM 调用错误兜底
+        return JsonResponse(
+            {"success": False, "error": f"AI 分析失败：{str(e)}"},
+            status=500
+        )
+
+    # 追问 agent 约定返回结构：
+    # {
+    #   "english_answer": "...",
+    #   "chinese_answer": "..."
+    # }
+    english_answer = (feedback.get("english_answer") or "").strip()
+    chinese_answer = (feedback.get("chinese_answer") or "").strip()
+
+    # 拼成一个文本，方便前端直接展示
+    # 你也可以分两条气泡展示，这里先简单拼在一起
+    parts = []
+    if english_answer:
+        parts.append("【English Explanation】\n" + english_answer)
+    if chinese_answer:
+        parts.append("【中文讲解】\n" + chinese_answer)
+
+    if not parts:
+        reply_text = "暂时没有生成有效解答，请稍后再试。"
+    else:
+        reply_text = "\n\n".join(parts)
+
+    return JsonResponse(
+        {
+            "success": True,
+            "reply": reply_text,
+        }
+    )
+def followup(request):
+    """
+    通用追问页面：
+    所有要展示的内容都通过 URL query 参数传进来，
+    比如：/followup/?task_name=...&readingtext=...&student_answer=...&issues=...&reason=...&answer=...
+    """
+
+    context = {
+        "task_name": request.GET.get("task_name", ""),          # 任务名/题目名，显示在页面标题
+        "readingtext": request.GET.get("readingtext", ""),      # 阅读原文
+        "student_answer": request.GET.get("student_answer", ""),# 学生最终回答
+        "issues": request.GET.get("issues", ""),                # AI 反馈：问题
+        "reason": request.GET.get("reason", ""),                # AI 反馈：建议/原因
+        "answer": request.GET.get("answer", ""),                # AI 反馈：参考答案
+    }
+
+    return render(request, "followup.html", context)
+
+ 
 
 

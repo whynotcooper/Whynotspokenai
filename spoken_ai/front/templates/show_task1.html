@@ -83,21 +83,23 @@
         <div id="feedbackContent"></div>
         <br>
         <a id="pdfLink" target="_blank" style="display:none;">📥 下载 PDF 报告</a>
+        <!-- 跳转到追问页面的按钮，初始隐藏 -->
+        <button id="followupBtn" class="btn btn-secondary hidden">进入追问与精讲</button>
     </div>
 
     <!-- 5. 显示参考答案按钮 -->
     <div class="section">
-        <button id="showAnswersBtn" class="btn btn-secondary">显示参考答案与解题思路</button>
+        <button id="toggleAnswersBtn" class="btn btn-secondary">显示参考答案与解题思路</button>
     </div>
 
     <!-- 6. 参考答案区域（初始隐藏） -->
     <div class="section hidden" id="answersSection">
         <h2>参考答案1</h2>
-        <p>{{ task.answertext1 }}</p>
+        <p>{{ task.answertext1|default:"无" }}</p>
         <h2>参考答案2</h2>
-        <p>{{ task.answertext2 }}</p>
+        <p>{{ task.answertext2|default:"无" }}</p>
         <h2>解题思路</h2>
-        <p>{{ task.reasontext }}</p>
+        <p>{{ task.reasontext|default:"无" }}</p>
     </div>
 
     <a href="{% url 'spoken_ai:task1_list' %}" class="back">← 返回任务列表</a>
@@ -111,7 +113,7 @@
         document.getElementById('startBtn').addEventListener('click', startRecording);
         document.getElementById('stopBtn').addEventListener('click', stopRecording);
         document.getElementById('confirmBtn').addEventListener('click', confirmAnswer);
-        document.getElementById('showAnswersBtn').addEventListener('click', showAnswers);
+        document.getElementById('toggleAnswersBtn').addEventListener('click', toggleAnswers);
 
         function startRecording() {
             navigator.mediaDevices.getUserMedia({ audio: true })
@@ -164,7 +166,7 @@
         function uploadAudio(blob) {
             const formData = new FormData();
             formData.append('audio', blob, 'answer.webm');
-        
+
             fetch(`process_task_audio/`, {
                 method: 'POST',
                 body: formData,
@@ -206,23 +208,47 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // 显示反馈
+                    // 1. 显示评分报告
                     let html = `<p><strong>评分:</strong> ${data.feedback.score || 'N/A'}</p>`;
                     html += `<p><strong>问题:</strong> ${data.feedback.issues || ''}</p>`;
                     html += `<p><strong>建议:</strong> ${data.feedback.reason || ''}</p>`;
+                    html += `<p><strong>参考答案:</strong> ${data.feedback.answer || ''}</p>`;
                     if (data.feedback.phrases) {
                         html += `<p><strong>推荐短语:</strong> ${data.feedback.phrases.join(', ')}</p>`;
                     }
+                    html += `<p><strong>推荐句子:</strong> ${data.feedback.sentences || ''}</p>`;
                     document.getElementById('feedbackContent').innerHTML = html;
 
-                    // 显示 PDF 链接
+                    // 2. 显示 PDF 链接（如果有）
                     if (data.pdf_url) {
                         const link = document.getElementById('pdfLink');
                         link.href = data.pdf_url;
                         link.style.display = 'inline';
                     }
 
+                    // 显示评分区域
                     document.getElementById('feedbackSection').classList.remove('hidden');
+
+                    // 3. 显示通用 followup 跳转按钮
+                    const followupBtn = document.getElementById('followupBtn');
+                    followupBtn.classList.remove('hidden');
+
+                    followupBtn.onclick = function () {
+                        // 通用 followup 路由（使用命名空间 spoken_ai）
+                        const baseUrl = "{% url 'spoken_ai:followup' %}";
+
+                        // 用 URLSearchParams 打包所有需要的内容
+                        const params = new URLSearchParams({
+                            task_name: "{{ task.name|default:''|escapejs }}",    // 显示在标题上的任务名
+                            readingtext: "{{ task.readingtext|default:''|escapejs }}",
+                            student_answer: finalText,
+                            issues: data.feedback.issues || '',
+                            reason: data.feedback.reason || '',
+                            answer: data.feedback.answer || ''
+                        });
+
+                        window.location.href = baseUrl + "?" + params.toString();
+                    };
                 } else {
                     alert('分析失败: ' + data.error);
                 }
@@ -233,9 +259,17 @@
             });
         }
 
-        function showAnswers() {
-            document.getElementById('answersSection').classList.remove('hidden');
-            document.getElementById('showAnswersBtn').classList.add('hidden');
+        function toggleAnswers() {
+            const answersSection = document.getElementById('answersSection');
+            const toggleBtn = document.getElementById('toggleAnswersBtn');
+
+            if (answersSection.classList.contains('hidden')) {
+                answersSection.classList.remove('hidden');
+                toggleBtn.textContent = '隐藏参考答案与解题思路';
+            } else {
+                answersSection.classList.add('hidden');
+                toggleBtn.textContent = '显示参考答案与解题思路';
+            }
         }
     </script>
 </body>

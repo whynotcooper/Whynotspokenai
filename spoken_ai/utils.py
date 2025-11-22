@@ -194,7 +194,7 @@ def synthesize(text: str, output_path: str):
         raise RuntimeError(f"Text-to-speech synthesis failed: {e}")
 
 class ToeflTaskAnalysisPipeline:
-    def __init__(self, api_key="sk-feb07e3e5a804d64a7ffdd0305527377", base_url="https://api.deepseek.com/v1", log_file="toefl_analysis_log.jsonl"):
+    def __init__(self, api_key="sk-feb07e3e5a804d64a7ffdd0305527377", base_url="https://api.deepseek.com/v1", log_file="toefl_analysis_log.jsonl", model_name="deepseek-chat"):
         """
         初始化通用托福任务分析管道
         :param api_key: LLM API 密钥 (建议通过环境变量传入)
@@ -205,6 +205,7 @@ class ToeflTaskAnalysisPipeline:
         if api_key is None:
             raise ValueError("API key must be provided.")
         self.client = OpenAI(api_key=api_key, base_url=base_url.strip())
+        self.model_name = model_name
 
         # 2. 配置日志
         self.log_file = log_file
@@ -238,6 +239,47 @@ Output ONLY valid JSON with keys: "issues", "reason", "answer", "phrases", "sent
 
             "task2": """
             """.strip(),
+            
+  "followup": """
+You are an expert TOEFL Speaking tutor and English learning coach.
+
+Your task: answer the student's FOLLOW-UP QUESTION about a previous TOEFL task.
+
+You are given:
+- `reading_text`: the original TOEFL material or prompt (for context).
+- `student_answer`: the student's original speaking response (transcribed text).
+- `student_question`: the student's follow-up question. This question may be in English or Chinese.
+
+Your goals:
+1. Understand what the student is confused about (content, structure, vocabulary, grammar, logic, scoring, etc.).
+2. Use the information in `reading_text` and `student_answer` ONLY as context. Do NOT re-evaluate or rescore the whole answer unless the question asks for it.
+3. Give a clear, practical, and concise explanation that directly solves the student's doubt.
+
+Language requirements:
+- You MUST output two versions of your explanation:
+  - One in English (for language learning and TOEFL context).
+  - One in Chinese (for deeper understanding).
+- The two versions should express the same core content, but natural in each language.
+
+Style guidelines:
+- Be encouraging and constructive, never harsh.
+- Use simple, clear English in the English part (CEFR B2–C1 level).
+- In the Chinese part, you can explain concepts more thoroughly if necessary.
+- If the student’s question is vague, infer the most likely intention based on `student_answer` and give a helpful explanation instead of asking for clarification.
+
+Output format:
+Return ONLY valid JSON with this structure:
+
+{
+  "english_answer": "<Your explanation in English. Paragraphs allowed.>",
+  "chinese_answer": "<Your explanation in Chinese. 段落说明均可。>"
+}
+
+Constraints:
+- Do NOT include any keys other than "english_answer" and "chinese_answer".
+- Do NOT add extra text outside the JSON.
+- Do NOT mention that you are an AI model; just act as a human TOEFL tutor.
+""".strip(),
         }
 
     def _call_llm(self, system_prompt: str, user_message: str, model: str = "deepseek-chat") -> dict:
@@ -317,6 +359,75 @@ Student's Response:
             print(f"[ERROR] Task1 Analysis Failed: {error_msg}")
             self._log_interaction("task1", input_data, error=error_msg)
             raise
+    def answer_followup_question(
+        self,
+        reading_text: str,
+        student_answer: str,
+        student_question: str,
+        temperature: float = 0.3,
+        log: bool = True,
+    ) -> dict:
+        """
+        处理学生对某一题的追问，返回中英双语解答（字典形式）
+
+        :param reading_text: 原始题目 / 阅读材料 / 听力文本
+        :param student_answer: 学生最初的口语作答（文本版）
+        :param student_question: 学生的追问（中/英文都可以）
+        :param temperature: LLM 采样温度
+        :param log: 是否写入日志文件
+        :return: {
+            "english_answer": "...",
+            "chinese_answer": "..."
+        }
+        """
+        system_prompt = self.prompts["followup"]
+      
+        user_content = (
+            "Here is the context for the question.\n\n"
+            f"=== READING TEXT / ORIGINAL PROMPT ===\n{reading_text}\n\n"
+            f"=== STUDENT ANSWER (ORIGINAL RESPONSE) ===\n{student_answer}\n\n"
+            f"=== STUDENT FOLLOW-UP QUESTION ===\n{student_question}\n"
+        )
+
+        response = self.client.chat.completions.create(
+            model=self.model_name,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_content},
+            ],
+            temperature=temperature,
+        )
+
+        raw_text = response.choices[0].message.content.strip()
+        print("原始模型输出：", raw_text)
+        # 尝试解析 JSON
+        try:
+            result = json.loads(raw_text)
+        except json.JSONDecodeError:
+            # 如果模型有轻微格式问题，可以做一点点兜底（也可以直接 raise）
+            # 这里简单兜底成一个统一结构
+            result = {
+                "english_answer": raw_text,
+                "chinese_answer": "模型返回的 JSON 格式不完全合法，已原样保留英文内容，请检查上游 prompt 或输出。"
+            }
+
+        # 写日志（可选）
+        if log:
+            log_record = {
+                "type": "followup",
+                "reading_text": reading_text,
+                "student_answer": student_answer,
+                "student_question": student_question,
+                "model_name": self.model_name,
+                "temperature": temperature,
+                "raw_response": raw_text,
+                "parsed_response": result,
+            }
+            with open(self.log_file, "a", encoding="utf-8") as f:
+                f.write(json.dumps(log_record, ensure_ascii=False) + "\n")
+
+        return result
+
 import os
 import io
 from django.conf import settings
@@ -596,3 +707,7 @@ class FeedbackPDFGenerator:
 def generate_pdf_report(task, student_answer, feedback):
     """生成PDF报告（快捷函数）"""
     return FeedbackPDFGenerator.generate_pdf_report(task, student_answer, feedback)
+
+
+
+
