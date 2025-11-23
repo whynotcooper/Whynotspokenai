@@ -28,33 +28,315 @@
 
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Noto Sans SC',sans-serif;}
 body{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);transition:.4s;}
-header{width:100%;padding:24px 48px;display:flex;justify-content:space-between;align-items:center;}
-header h1{font-size:26px;font-weight:700;color:var(--text);}
-#themeToggle{background:none;border:none;color:var(--text);cursor:pointer;font-size:28px;}
-.search-box{position:relative;margin:16px 0 32px;width:clamp(300px,60vw,600px);}
-.search-box input{width:100%;padding:16px 52px 16px 20px;border-radius:var(--radius);border:none;background:var(--card-bg);color:var(--text);font-size:16px;backdrop-filter:blur(var(--blur));box-shadow:var(--shadow);}
-.search-box .icon{position:absolute;right:16px;top:50%;transform:translateY(-50%);color:var(--primary);cursor:pointer;font-size:24px;}
-.suggestion{position:absolute;top:100%;left:0;right:0;margin-top:4px;background:var(--card-bg);border-radius:var(--radius);backdrop-filter:blur(var(--blur));box-shadow:var(--shadow);overflow:hidden;display:none;}
-.suggestion li{padding:12px 20px;cursor:pointer;color:var(--text);}
-.suggestion li:hover{background:rgba(103,80,164,.15);}
 
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:32px;padding:0 48px 48px;width:100%;max-width:1200px;}
-.card{position:relative;height:200px;border-radius:var(--radius);background:var(--card-bg);color:var(--text);overflow:hidden;backdrop-filter:blur(var(--blur));box-shadow:var(--shadow);display:flex;align-items:flex-end;padding:24px;transition:transform .4s;}
-.card:hover{transform:rotateY(-5deg) scale(1.03);}
-.card .icon{font-size:48px;color:var(--primary);position:absolute;top:24px;left:24px;}
-.card h3{font-size:22px;font-weight:600;margin-bottom:4px;}
-.card p{font-size:14px;opacity:.8;}
-.card-bg{position:absolute;inset:0;border-radius:inherit;background:linear-gradient(135deg,var(--primary),#9f7aea);opacity:.15;transition:opacity .4s;}
-.card:hover .card-bg{opacity:.25;}
+/* 顶部区域 */
+header{
+  width:100%;
+  padding:24px 48px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+header h1{
+  font-size:26px;
+  font-weight:700;
+  color:var(--text);
+  letter-spacing:1px;
+}
+
+/* 右侧：主题开关 + 登录区域 */
+.header-right{
+  display:flex;
+  align-items:center;
+  gap:16px;
+}
+
+#themeToggle{
+  background:var(--card-bg);
+  border:none;
+  color:var(--text);
+  cursor:pointer;
+  font-size:22px;
+  border-radius:999px;
+  padding:8px 10px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  backdrop-filter:blur(var(--blur));
+  box-shadow:var(--shadow);
+}
+
+.auth-actions{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.auth-btn{
+  padding:8px 18px;
+  border-radius:999px;
+  border:1px solid rgba(103,80,164,.25);
+  background:var(--card-bg);
+  color:var(--text);
+  font-size:14px;
+  text-decoration:none;
+  backdrop-filter:blur(var(--blur));
+  box-shadow:var(--shadow);
+  display:flex;
+  align-items:center;
+  gap:6px;
+  transition:.3s;
+}
+.auth-btn span.material-symbols-rounded{
+  font-size:18px;
+}
+.auth-btn:hover{
+  transform:translateY(-1px);
+  box-shadow:0 10px 24px rgba(0,0,0,.18);
+}
+
+/* 主要按钮（注册） */
+.auth-btn.primary{
+  background:linear-gradient(135deg,#6750a4,#9f7aea);
+  color:#fff;
+  border:none;
+}
+
+/* 用户信息展示 */
+.user-pill{
+  padding:8px 14px;
+  border-radius:999px;
+  background:var(--card-bg);
+  border:1px solid rgba(103,80,164,.25);
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-size:14px;
+  color:var(--text);
+  backdrop-filter:blur(var(--blur));
+  box-shadow:var(--shadow);
+}
+.user-avatar{
+  width:28px;
+  height:28px;
+  border-radius:50%;
+  background:linear-gradient(135deg,#6750a4,#9f7aea);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:#fff;
+  font-size:16px;
+  font-weight:600;
+}
+
+/* 搜索框 */
+.search-box{
+  position:relative;
+  margin:16px 0 32px;
+  width:clamp(300px,60vw,600px);
+}
+.search-box input{
+  width:100%;
+  padding:16px 52px 16px 20px;
+  border-radius:var(--radius);
+  border:none;
+  background:var(--card-bg);
+  color:var(--text);
+  font-size:16px;
+  backdrop-filter:blur(var(--blur));
+  box-shadow:var(--shadow);
+}
+.search-box .icon{
+  position:absolute;
+  right:16px;
+  top:50%;
+  transform:translateY(-50%);
+  color:var(--primary);
+  cursor:pointer;
+  font-size:24px;
+}
+.suggestion{
+  position:absolute;
+  top:100%;
+  left:0;
+  right:0;
+  margin-top:4px;
+  background:var(--card-bg);
+  border-radius:var(--radius);
+  backdrop-filter:blur(var(--blur));
+  box-shadow:var(--shadow);
+  overflow:hidden;
+  display:none;
+}
+.suggestion li{
+  padding:12px 20px;
+  cursor:pointer;
+  color:var(--text);
+}
+.suggestion li:hover{
+  background:rgba(103,80,164,.15);
+}
+
+/* 卡片网格 */
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+  gap:32px;
+  padding:0 48px 48px;
+  width:100%;
+  max-width:1200px;
+}
+.card{
+  position:relative;
+  height:200px;
+  border-radius:var(--radius);
+  background:var(--card-bg);
+  color:var(--text);
+  overflow:hidden;
+  backdrop-filter:blur(var(--blur));
+  box-shadow:var(--shadow);
+  display:flex;
+  align-items:flex-end;
+  padding:24px;
+  transition:transform .4s;
+  text-decoration:none;
+}
+.card:hover{
+  transform:rotateY(-5deg) scale(1.03);
+}
+.card .icon{
+  font-size:48px;
+  color:var(--primary);
+  position:absolute;
+  top:24px;
+  left:24px;
+}
+.card h3{
+  font-size:22px;
+  font-weight:600;
+  margin-bottom:4px;
+}
+.card p{
+  font-size:14px;
+  opacity:.8;
+}
+.card-bg{
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  background:linear-gradient(135deg,var(--primary),#9f7aea);
+  opacity:.15;
+  transition:opacity .4s;
+}
+.card:hover .card-bg{
+  opacity:.25;
+}
+
+/* 登录提示弹窗 */
+.auth-modal-backdrop{
+  position:fixed;
+  inset:0;
+  background:rgba(15,23,42,.40);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:99;
+}
+.auth-modal{
+  width:clamp(280px,90vw,360px);
+  background:var(--card-bg);
+  border-radius:20px;
+  padding:22px 20px 18px;
+  backdrop-filter:blur(var(--blur));
+  box-shadow:var(--shadow);
+  position:relative;
+}
+.auth-modal h2{
+  font-size:18px;
+  margin-bottom:6px;
+  color:var(--text);
+}
+.auth-modal p{
+  font-size:14px;
+  color:var(--text);
+  opacity:.85;
+}
+.auth-modal-header{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:8px;
+}
+.auth-modal-icon{
+  width:32px;
+  height:32px;
+  border-radius:12px;
+  background:linear-gradient(135deg,#f97316,#ec4899);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:#fff;
+}
+.auth-modal-footer{
+  display:flex;
+  justify-content:flex-end;
+  gap:10px;
+  margin-top:16px;
+}
+.modal-btn{
+  padding:8px 14px;
+  border-radius:999px;
+  border:none;
+  cursor:pointer;
+  font-size:13px;
+}
+.modal-btn.secondary{
+  background:transparent;
+  border:1px solid rgba(148,163,184,.6);
+  color:var(--text);
+}
+.modal-btn.primary{
+  background:linear-gradient(135deg,#6750a4,#9f7aea);
+  color:#fff;
+}
 </style>
 </head>
 
-<body>
+<body {% if request.COOKIES.theme == 'dark' %}data-theme="dark"{% endif %}>
 <header>
   <h1>AI 口语教练</h1>
-  <button id="themeToggle" aria-label="切换主题">
-    <span class="material-symbols-rounded">brightness_4</span>
-  </button>
+
+  <div class="header-right">
+    <!-- 主题切换 -->
+    <button id="themeToggle" aria-label="切换主题">
+      <span class="material-symbols-rounded">brightness_4</span>
+    </button>
+
+    <!-- 登录 / 注册 / 退出：使用 login_in / username，而不是 user.is_authenticated -->
+    <div class="auth-actions">
+      {% if login_in %}
+        <div class="user-pill">
+          <div class="user-avatar">
+            {{ username|first|default:"U" }}
+          </div>
+          <span>欢迎回来，{{ username }}</span>
+        </div>
+        <a href="{% url 'spoken_ai:logout' %}" class="auth-btn">
+          <span class="material-symbols-rounded">logout</span>
+          退出
+        </a>
+      {% else %}
+        <a href="{% url 'spoken_ai:login' %}" class="auth-btn">
+          <span class="material-symbols-rounded">login</span>
+          登录
+        </a>
+        <a href="{% url 'spoken_ai:register' %}" class="auth-btn primary">
+          <span class="material-symbols-rounded">person_add</span>
+          注册
+        </a>
+      {% endif %}
+    </div>
+  </div>
 </header>
 
 <div class="search-box">
@@ -63,10 +345,12 @@ header h1{font-size:26px;font-weight:700;color:var(--text);}
   <ul class="suggestion" id="suggestionBox"></ul>
 </div>
 
-<!-- ========= 可跳转的 6 张卡片 ========= -->
+<!-- ========= 功能卡片：全部要求登录后才能进入 ========= -->
 <section class="grid">
   <!-- 托福口语 -->
-  <a class="card" href="{%url 'spoken_ai:toefl_index'%}" target="_blank" rel="noopener">
+  <a class="card feature-link" 
+     href="{% url 'spoken_ai:toefl_index' %}" 
+     data-auth-required="true">
     <span class="icon material-symbols-rounded">record_voice_over</span>
     <div class="card-bg"></div>
     <div>
@@ -76,7 +360,9 @@ header h1{font-size:26px;font-weight:700;color:var(--text);}
   </a>
 
   <!-- AI 口语教练 -->
-  <a class="card" href="{%url 'spoken_ai:spoken_ai'%}" target="_blank" rel="noopener">
+  <a class="card feature-link" 
+     href="{% url 'spoken_ai:spoken_ai' %}" 
+     data-auth-required="true">
     <span class="icon material-symbols-rounded">smart_toy</span>
     <div class="card-bg"></div>
     <div>
@@ -86,7 +372,9 @@ header h1{font-size:26px;font-weight:700;color:var(--text);}
   </a>
 
   <!-- 雅思口语 -->
-  <a class="card" href="{%url 'spoken_ai:index'%}" target="_blank" rel="noopener">
+  <a class="card feature-link" 
+     href="{% url 'spoken_ai:index' %}" 
+     data-auth-required="true">
     <span class="icon material-symbols-rounded">mic</span>
     <div class="card-bg"></div>
     <div>
@@ -96,7 +384,9 @@ header h1{font-size:26px;font-weight:700;color:var(--text);}
   </a>
 
   <!-- 学术交流 -->
-  <a class="card" href="{%url 'spoken_ai:index'%}" target="_blank" rel="noopener">
+  <a class="card feature-link" 
+     href="{% url 'spoken_ai:index' %}" 
+     data-auth-required="true">
     <span class="icon material-symbols-rounded">forum</span>
     <div class="card-bg"></div>
     <div>
@@ -106,8 +396,10 @@ header h1{font-size:26px;font-weight:700;color:var(--text);}
   </a>
 
   <!-- 旅游出行 -->
-  <a class="card" href="{%url 'spoken_ai:index'%}" target="_blank" rel="noopener">
-    <span class="icon material-symbols-rounded">travel</span>
+  <a class="card feature-link" 
+     href="{% url 'spoken_ai:index' %}" 
+     data-auth-required="true">
+    <span class="icon material-symbols-rounded">travel_explore</span>
     <div class="card-bg"></div>
     <div>
       <h3>旅游出行</h3>
@@ -116,7 +408,9 @@ header h1{font-size:26px;font-weight:700;color:var(--text);}
   </a>
 
   <!-- 地道俚语 -->
-  <a class="card" href="{%url 'spoken_ai:index'%}" target="_blank" rel="noopener">
+  <a class="card feature-link" 
+     href="{% url 'spoken_ai:index' %}" 
+     data-auth-required="true">
     <span class="icon material-symbols-rounded">emoji_emotions</span>
     <div class="card-bg"></div>
     <div>
@@ -126,11 +420,34 @@ header h1{font-size:26px;font-weight:700;color:var(--text);}
   </a>
 </section>
 
+<!-- 登录提示弹窗 -->
+<div class="auth-modal-backdrop" id="authModalBackdrop">
+  <div class="auth-modal">
+    <div class="auth-modal-header">
+      <div class="auth-modal-icon">
+        <span class="material-symbols-rounded" style="font-size:20px;">lock</span>
+      </div>
+      <div>
+        <h2>需要登录后才能使用</h2>
+        <p>请先登录账号，再进入口语训练模块。</p>
+      </div>
+    </div>
+    <div class="auth-modal-footer">
+      <button class="modal-btn secondary" id="modalCancelBtn">稍后再说</button>
+      <a href="{% url 'spoken_ai:login' %}" class="modal-btn primary" id="modalLoginBtn">去登录</a>
+    </div>
+  </div>
+</div>
+
 <script>
+/* 用后端变量告诉前端当前登录状态（来自 session: login_in） */
+const isAuthenticated = {{ login_in|yesno:"true,false" }};  // True/False -> true/false
+
 /* 1. 主题切换 */
 const themeToggle = document.getElementById('themeToggle');
 themeToggle.addEventListener('click', () => {
-  document.body.dataset.theme = document.body.dataset.theme === 'dark' ? '' : 'dark';
+  const isDark = document.body.dataset.theme === 'dark';
+  document.body.dataset.theme = isDark ? '' : 'dark';
 });
 
 /* 2. 搜索联想 */
@@ -162,7 +479,34 @@ searchInput.addEventListener('input', () => {
 document.addEventListener('click', e => {
   if (!e.target.closest('.search-box')) suggestionBox.style.display = 'none';
 });
+
+/* 3. 功能卡片：必须登录后才能跳转 */
+const featureLinks = document.querySelectorAll('.feature-link[data-auth-required="true"]');
+const authModalBackdrop = document.getElementById('authModalBackdrop');
+const modalCancelBtn = document.getElementById('modalCancelBtn');
+
+function showAuthModal() {
+  authModalBackdrop.style.display = 'flex';
+}
+function closeAuthModal() {
+  authModalBackdrop.style.display = 'none';
+}
+
+featureLinks.forEach(link => {
+  link.addEventListener('click', function (e) {
+    if (!isAuthenticated) {
+      e.preventDefault();
+      showAuthModal();
+    }
+  });
+});
+
+modalCancelBtn.addEventListener('click', closeAuthModal);
+authModalBackdrop.addEventListener('click', (e) => {
+  if (e.target === authModalBackdrop) {
+    closeAuthModal();
+  }
+});
 </script>
 </body>
 </html>
-

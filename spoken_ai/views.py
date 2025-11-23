@@ -61,8 +61,14 @@ def _safe_remove(*paths):
         except Exception:
             pass
 def index(request):
-    return render(request, "index.html")
+    username = request.session.get('username')
+    login_in = request.session.get('login_in', False)
 
+    context = {
+        'username': username,
+        'login_in': login_in,
+    }
+    return render(request, 'index.html', context)
 
 
 
@@ -213,114 +219,150 @@ from .models import UserInfoModel
 
 import json
 
-class RegisterView(View):
-    """用户注册视图"""
-    
-    def get(self, request):
-        """GET请求返回注册页面"""
-        return render(request, 'register.html')
-    
-    def post(self, request):
-        """POST请求处理注册逻辑"""
-        try:
-            # 获取请求数据
-            if request.content_type == 'application/json':
-                data = json.loads(request.body)
-            else:
-                data = request.POST
-            
-            username = data.get('username', '').strip()
-            password = data.get('password', '').strip()
-            phone = data.get('phone', '').strip()
-            
-            # 基本数据验证
-            if not all([username, password, phone]):
-                return JsonResponse({
-                    'code': 400,
-                    'message': '用户名、密码和手机号不能为空',
-                    'data': None
-                })
-            
-            # 创建用户实例（不直接保存到数据库）
-            user = UserInfoModel(
-                username=username,
-                password=make_password(password),  # 密码加密
-                phone=phone
-            )
-            
-            # 完整验证模型字段
-            user.full_clean()
-            
-            # 保存到数据库
-            user.save()
-            
-            return JsonResponse({
-                'code': 200,
-                'message': '注册成功',
-                'data': {
-                    'user_id': user.id,
-                    'username': user.username,
-                    'phone': user.phone
-                }
-            })
-            
-        except ValidationError as e:
-            # 处理字段验证错误
-            error_messages = []
-            for field, errors in e.message_dict.items():
-                for error in errors:
-                    error_messages.append(f"{field}: {error}")
-            
-            return JsonResponse({
-                'code': 400,
-                'message': '; '.join(error_messages),
-                'data': None
-            })
-            
-        except Exception as e:
-            # 处理其他异常（如唯一约束冲突）
-            error_msg = str(e)
-            if 'username' in error_msg.lower() or 'username' in error_msg:
-                return JsonResponse({
-                    'code': 400,
-                    'message': '用户名已存在',
-                    'data': None
-                })
-            elif 'phone' in error_msg.lower() or 'phone' in error_msg:
-                return JsonResponse({
-                    'code': 400,
-                    'message': '手机号已存在',
-                    'data': None
-                })
-            else:
-                return JsonResponse({
-                    'code': 500,
-                    'message': f'注册失败: {error_msg}',
-                    'data': None
-                })
 
 # 如果需要函数视图版本
 def register(request):
     if request.method == 'GET':
-        return render(request,'register.html')
-    else:
-        # 用户注册
-        print("register1111111")
-        username = request.POST.get('username')
-        password = request.POST.get('password')
-        phone = request.POST.get('phone')
-        print(username, password, phone, )
-        if not (username or password or phone ):
-            return JsonResponse({'code': 400, 'message': '缺少必传的参数'})
-        user = UserInfoModel.objects.filter(username=username).first()
-        if user:
-            return JsonResponse({'code': 400, 'message': '用户名已存在'})
-        user = UserInfoModel.objects.create(username=username, password=password, phone=phone)
+        # 直接渲染注册页面
+        return render(request, 'register.html')
+
+    # POST 请求：用户注册
+    print("进入 register 视图 POST")
+    username = request.POST.get('username', '').strip()
+    password = request.POST.get('password', '')
+    phone = request.POST.get('phone', '').strip()
+    print("接收参数：", username, password, phone)
+
+    # 参数校验：只要有一个为空就返回错误
+    if not (username and password and phone):
+        return JsonResponse({'code': 400, 'message': '缺少必传的参数'})
+
+    # 再做一次简单校验（长度、手机号格式），也可以只在前端做
+    if len(password) < 8:
+        return JsonResponse({'code': 400, 'message': '密码长度至少为8位'})
+
+    import re
+    phone_regex = re.compile(r'^1[3-9]\d{9}$')
+    if not phone_regex.match(phone):
+        return JsonResponse({'code': 400, 'message': '手机号格式不正确'})
+
+    # 检查用户名是否已存在
+    user = UserInfoModel.objects.filter(username=username).first()
+    if user:
+        return JsonResponse({'code': 400, 'message': '用户名已存在'})
+
+    # 创建用户（这里是明文密码，后续建议使用加密密码）
+    user = UserInfoModel.objects.create(
+        username=username,
+        password=password,
+        phone=phone
+    )
+    print("新建用户：", user)
+
+    # 设置 session
+    request.session['login_in'] = True
+    request.session['username'] = user.username
+    request.session['user_id'] = user.id
+
+    return JsonResponse({'code': 200, 'message': '注册成功'})
+# views.py
+from django.shortcuts import render, redirect
+from django.contrib.auth import authenticate, login, logout
+from django.contrib import messages
+from django.views.decorators.http import require_http_methods
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from django.db.models import Q
+from .models import UserInfoModel
+
+@require_http_methods(["GET", "POST"])
+def login_view(request):
+    """
+    登录视图：
+    - GET  请求：渲染 login.html
+    - POST 请求：用 UserInfoModel 校验用户名/手机号 + 密码
+    """
+    if request.method == "GET":
+        next_url = request.GET.get("next", "")
+        return render(request, "login.html", {"next": next_url})
+
+    # POST：提交登录
+    login_id = request.POST.get("username", "").strip()  # 可以是用户名或手机号
+    password = request.POST.get("password", "")
+
+    if not (login_id and password):
+        messages.error(request, "用户名/手机号 和 密码不能为空。")
+        next_url = request.POST.get("next", "")
+        return render(request, "login.html", {"next": next_url, "username": login_id})
+
+    # 用你自己的 UserInfoModel 来查：
+    # 支持：用户名 OR 手机号 + 明文密码
+    user = UserInfoModel.objects.filter(
+        Q(username=login_id) | Q(phone=login_id),
+        password=password
+    ).first()
+
+    if user:
+        # 登录成功：自己往 session 里塞
         request.session['login_in'] = True
         request.session['username'] = user.username
         request.session['user_id'] = user.id
-        return JsonResponse({'code': 200})
 
+        # 处理 next 跳转
+        next_url = request.POST.get("next") or request.GET.get("next")
+        if next_url:
+            return redirect(next_url)
+
+        # 没有 next 就跳首页（根据你的 urls 改）
+        return redirect("spoken_ai:index")
+    else:
+        # 登录失败
+        messages.error(request, "用户名或密码不正确，请重试。")
+        next_url = request.POST.get("next", "")
+        return render(request, "login.html", {"next": next_url, "username": login_id})
+
+from django.contrib.auth.forms import PasswordResetForm
+
+def password_reset(request):
+    """
+    简单版找回密码视图：
+    - GET：展示表单
+    - POST：校验邮箱，成功后在当前页提示发送成功
+    """
+    email_sent = False
+
+    if request.method == "POST":
+        form = PasswordResetForm(request.POST)
+        if form.is_valid():
+            # TODO：后面你想真正发邮件时，再把这段打开
+            # form.save(
+            #     request=request,
+            #     use_https=request.is_secure(),
+            #     email_template_name="spoken_ai/password_reset_email.html",
+            #     subject_template_name="spoken_ai/password_reset_subject.txt",
+            # )
+
+            email_sent = True
+    else:
+        form = PasswordResetForm()
+
+    context = {
+        "form": form,
+        "email_sent": email_sent,
+    }
+    return render(request, "password_reset.html", context)
+def logout_view(request):
+    """
+    退出登录视图：
+    - 调用 Django 的 logout() 清除会话
+    - 再渲染一个精美的 logout.html 提示“已安全退出”
+    """
+    # 不管是否已登录，logout 都是安全的（幂等）
+    logout(request)
+
+    # 你之前写好的精美退出页面
+    # 如果你想直接回首页，也可以改成 return redirect("index")
+    return render(request, "logout.html")
 def task1_list(request):
     tasks = Task1Model.objects.all().order_by('name')
     return render(request, 'toefl_task1.html', {'tasks': tasks})

@@ -11,6 +11,8 @@ app_name = 'spoken_ai'
 
 urlpatterns = [
     path('', views.index, name='index'),  # 首页
+    path('login/', views.login_view, name='login'),  # 登录页面
+    path('logout/', views.logout_view, name='logout'),  # 登出页面  
     path('spoken_ai/', views.spoken_ai, name='spoken_ai'),  # 口语教练
     path('process_audio/', views.process_audio, name='process_audio'),  # 处理音频
     path('finish_session/', views.finish_session, name='finish_session'),
@@ -24,4 +26,5 @@ urlpatterns = [
     path('task2/<int:task_id>/', views.show_task2, name='show_task2'),
     path('followup/',views.followup,name='followup'),
     path("followup/chat/", views.solve_followup, name="followup_chat"),  # 接收 AJAX
+    path('password_reset/', views.password_reset, name='password_reset'),  # 找回密码页面
 ]  

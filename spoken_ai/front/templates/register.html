@@ -172,22 +172,24 @@
                 <p>注册您的账户</p>
             </div>
             
-            <form id="registerForm">
+            <!-- 一定要有 method + action + csrf_token + name 属性 -->
+            <form id="registerForm" method="post" action="{% url 'spoken_ai:register' %}">
+                {% csrf_token %}
                 <div class="form-group">
                     <label for="username">用户名</label>
-                    <input type="text" id="username" class="form-control" placeholder="请输入用户名" required>
+                    <input type="text" name="username" id="username" class="form-control" placeholder="请输入用户名" required>
                     <div class="error-message" id="usernameError">用户名不能为空</div>
                 </div>
                 
                 <div class="form-group">
-                    <label for="password">密码 (10位)</label>
-                    <input type="password" id="password" class="form-control" placeholder="请输入10位密码" required maxlength="10">
-                    <div class="error-message" id="passwordError">密码必须为10位</div>
+                    <label for="password">密码（至少8位）</label>
+                    <input type="password" name="password" id="password" class="form-control" placeholder="请输入至少8位密码" required>
+                    <div class="error-message" id="passwordError">密码长度至少为8位</div>
                 </div>
                 
                 <div class="form-group">
                     <label for="phone">手机号</label>
-                    <input type="tel" id="phone" class="form-control" placeholder="请输入手机号" required>
+                    <input type="tel" name="phone" id="phone" class="form-control" placeholder="请输入手机号" required>
                     <div class="error-message" id="phoneError">请输入有效的手机号</div>
                 </div>
                 
@@ -195,59 +197,96 @@
             </form>
             
             <div class="login-link">
-                已有账户？<a href="#">立即登录</a>
+                已有账户？<a href="{% url 'spoken_ai:login' %}">立即登录</a>
             </div>
         </div>
     </div>
 
     <script>
-        document.getElementById('registerForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
+        const form = document.getElementById('registerForm');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const phoneInput = document.getElementById('phone');
+
+        const usernameError = document.getElementById('usernameError');
+        const passwordError = document.getElementById('passwordError');
+        const phoneError = document.getElementById('phoneError');
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();  // 阻止默认提交，改为 Ajax 提交
+
             let isValid = true;
-            const username = document.getElementById('username').value.trim();
-            const password = document.getElementById('password').value;
-            const phone = document.getElementById('phone').value.trim();
-            
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value;
+            const phone = phoneInput.value.trim();
+
             // 验证用户名
             if (username === '') {
-                document.getElementById('usernameError').style.display = 'block';
+                usernameError.style.display = 'block';
                 isValid = false;
             } else {
-                document.getElementById('usernameError').style.display = 'none';
+                usernameError.style.display = 'none';
             }
-            
-            // 验证密码
-            if (password.length !== 10) {
-                document.getElementById('passwordError').style.display = 'block';
+
+            // 验证密码（至少 8 位）
+            if (password.length < 8) {
+                passwordError.style.display = 'block';
                 isValid = false;
             } else {
-                document.getElementById('passwordError').style.display = 'none';
+                passwordError.style.display = 'none';
             }
-            
+
             // 验证手机号
             const phoneRegex = /^1[3-9]\d{9}$/;
             if (!phoneRegex.test(phone)) {
-                document.getElementById('phoneError').style.display = 'block';
+                phoneError.style.display = 'block';
                 isValid = false;
             } else {
-                document.getElementById('phoneError').style.display = 'none';
+                phoneError.style.display = 'none';
             }
-            
-            if (isValid) {
-                // 这里可以添加提交表单的代码
-                alert('注册成功！');
-                // 实际应用中这里应该是提交到服务器的代码
-                // this.submit();
+
+            if (!isValid) {
+                return;
             }
+
+            // 通过前端校验，发 Ajax 请求给后端
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+            fetch("{% url 'spoken_ai:register' %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+                    "X-CSRFToken": csrfToken
+                },
+                body: new URLSearchParams({
+                    username: username,
+                    password: password,
+                    phone: phone
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.code === 200) {
+                    alert('注册成功！');
+                    // 注册成功后跳转到登录页或主页
+                    window.location.href = "{% url 'spoken_ai:login' %}";
+                } else {
+                    // 后端返回错误信息
+                    alert(data.message || '注册失败，请稍后重试');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('网络错误，请稍后重试');
+            });
         });
-        
-        // 实时验证密码长度
-        document.getElementById('password').addEventListener('input', function() {
-            if (this.value.length !== 10) {
-                document.getElementById('passwordError').style.display = 'block';
+
+        // 实时验证密码长度（至少 8 位）
+        passwordInput.addEventListener('input', function() {
+            if (this.value.length < 8) {
+                passwordError.style.display = 'block';
             } else {
-                document.getElementById('passwordError').style.display = 'none';
+                passwordError.style.display = 'none';
             }
         });
     </script>

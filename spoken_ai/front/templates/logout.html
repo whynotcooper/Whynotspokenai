@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>英语口语网站 - 安全退出</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 700px;
+            width: 100%;
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 40px 30px 35px;
+            box-shadow: 0 18px 35px rgba(0, 0, 0, 0.28);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .container::before {
+            content: "";
+            position: absolute;
+            width: 180px;
+            height: 180px;
+            background: radial-gradient(circle, rgba(106,17,203,0.2), transparent 70%);
+            top: -40px;
+            left: -40px;
+            pointer-events: none;
+        }
+
+        .container::after {
+            content: "";
+            position: absolute;
+            width: 220px;
+            height: 220px;
+            background: radial-gradient(circle, rgba(37,117,252,0.18), transparent 70%);
+            bottom: -60px;
+            right: -60px;
+            pointer-events: none;
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 15px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .logo h1 {
+            font-size: 2rem;
+            color: #2575fc;
+            margin-bottom: 6px;
+        }
+
+        .logo span {
+            font-size: 0.9rem;
+            color: #888;
+        }
+
+        .success-icon-wrapper {
+            display: flex;
+            justify-content: center;
+            margin: 18px 0 10px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .success-circle {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #6a11cb, #2575fc);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 10px 22px rgba(37, 117, 252, 0.45);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .success-circle::before {
+            content: "";
+            position: absolute;
+            width: 130%;
+            height: 130%;
+            background: radial-gradient(circle at 20% 0, rgba(255,255,255,0.5), transparent);
+            opacity: 0.9;
+        }
+
+        .success-check {
+            position: relative;
+            width: 38px;
+            height: 24px;
+            border-left: 4px solid #fff;
+            border-bottom: 4px solid #fff;
+            transform: rotate(-45deg) translateY(-2px);
+        }
+
+        .title {
+            text-align: center;
+            margin-top: 12px;
+            font-size: 1.6rem;
+            font-weight: 600;
+            color: #222;
+            position: relative;
+            z-index: 1;
+        }
+
+        .subtitle {
+            text-align: center;
+            margin-top: 8px;
+            font-size: 0.98rem;
+            color: #777;
+            position: relative;
+            z-index: 1;
+        }
+
+        .highlight-chip {
+            margin: 15px auto 10px;
+            padding: 6px 14px;
+            border-radius: 999px;
+            background: rgba(37, 117, 252, 0.06);
+            border: 1px solid rgba(37,117,252,0.18);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.86rem;
+            color: #555;
+        }
+
+        .chip-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #22c55e;
+        }
+
+        .info-card {
+            margin-top: 18px;
+            background: #fafbff;
+            border-radius: 15px;
+            padding: 16px 18px;
+            border: 1px solid #eef0ff;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .info-item {
+            flex: 1 1 140px;
+            font-size: 0.88rem;
+            color: #555;
+        }
+
+        .info-item span {
+            display: block;
+        }
+
+        .info-label {
+            color: #999;
+            margin-bottom: 3px;
+            font-size: 0.8rem;
+        }
+
+        .info-value {
+            font-weight: 500;
+        }
+
+        .countdown {
+            margin-top: 18px;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #666;
+            position: relative;
+            z-index: 1;
+        }
+
+        .countdown span {
+            color: #2575fc;
+            font-weight: 600;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 22px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px;
+            border-radius: 999px;
+            border: none;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(to right, #6a11cb, #2575fc);
+            color: #fff;
+            box-shadow: 0 8px 18px rgba(37, 117, 252, 0.35);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 22px rgba(37, 117, 252, 0.42);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+            box-shadow: none;
+        }
+
+        .btn-outline {
+            background: #fff;
+            color: #2575fc;
+            border: 1px solid rgba(37, 117, 252, 0.35);
+        }
+
+        .btn-outline:hover {
+            background: rgba(37, 117, 252, 0.05);
+        }
+
+        .footer-tip {
+            margin-top: 18px;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #999;
+            position: relative;
+            z-index: 1;
+        }
+
+        .footer-tip span {
+            color: #2575fc;
+        }
+
+        @media (max-width: 576px) {
+            .container {
+                padding: 30px 20px 25px;
+            }
+
+            .logo h1 {
+                font-size: 1.8rem;
+            }
+
+            .title {
+                font-size: 1.4rem;
+            }
+
+            .btn-group {
+                flex-direction: column;
+            }
+        }
+
+        /* 简单的淡入动画 */
+        .fade-in {
+            animation: fadeInUp 0.6s ease-out both;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(18px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container fade-in">
+    <div class="logo">
+        <h1>SpeakEasy</h1>
+        <span>英语口语练习社区</span>
+    </div>
+
+    <div class="success-icon-wrapper">
+        <div class="success-circle">
+            <div class="success-check"></div>
+        </div>
+    </div>
+
+    <div class="title">您已安全退出</div>
+    <div class="subtitle">期待你下一次的英语练习，在 SpeakEasy 继续自信开口说。</div>
+
+    <div style="text-align: center; margin-top: 8px;">
+        <div class="highlight-chip">
+            <span class="chip-dot"></span>
+            安全登出 · 账号隐私已保护
+        </div>
+    </div>
+
+    <div class="info-card">
+        <div class="info-item">
+            <span class="info-label">退出时间</span>
+            <span class="info-value" id="logoutTime">--:--:--</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">建议</span>
+            <span class="info-value">公共设备上退出账号更安全</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">小提示</span>
+            <span class="info-value">每天 15 分钟口语练习效果更佳</span>
+        </div>
+    </div>
+
+    <div class="countdown">
+        <span id="countdown">5</span> 秒后将自动跳转到登录页面…
+    </div>
+
+    <div class="btn-group">
+        <!-- TODO：将 login.html / index.html 换成你项目里的实际路径 -->
+        <button class="btn btn-primary" id="goLoginBtn">重新登录</button>
+        <button class="btn btn-outline" id="goHomeBtn">返回首页</button>
+    </div>
+
+    <div class="footer-tip">
+        使用公共电脑时，请务必在离开前确认已经 <span>退出登录</span>。
+    </div>
+</div>
+
+<script>
+    // 设置退出时间显示
+    function formatTime(date) {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        const hh = String(date.getHours()).padStart(2, '0');
+        const mm = String(date.getMinutes()).padStart(2, '0');
+        const ss = String(date.getSeconds()).padStart(2, '0');
+        return `${y}-${m}-${d} ${hh}:${mm}:${ss}`;
+    }
+
+    const logoutTimeEl = document.getElementById('logoutTime');
+    logoutTimeEl.textContent = formatTime(new Date());
+
+    // 倒计时逻辑
+    const countdownEl = document.getElementById('countdown');
+    let seconds = 5;
+
+    const targetLoginUrl = '{% url 'spoken_ai:login' %}'; // 修改为你的登录页路径
+    const targetHomeUrl = '{% url 'spoken_ai:index' %}';  // 修改为你的网站首页路径
+
+    const timer = setInterval(() => {
+        seconds--;
+        countdownEl.textContent = seconds;
+        if (seconds <= 0) {
+            clearInterval(timer);
+            window.location.href = targetLoginUrl;
+        }
+    }, 1000);
+
+    // 按钮事件
+    document.getElementById('goLoginBtn').addEventListener('click', function () {
+        clearInterval(timer);
+        window.location.href = targetLoginUrl;
+    });
+
+    document.getElementById('goHomeBtn').addEventListener('click', function () {
+        clearInterval(timer);
+        window.location.href = targetHomeUrl;
+    });
+</script>
+</body>
+</html>
