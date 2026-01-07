@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+{% block title %}{{ room.name }}{% endblock %}
+{% block header_title %}{{ room.name }}{% endblock %}
+
+{% block page_style %}
+  .wrap{max-width:900px;margin:0 auto;padding:0 24px 40px;}
+  .chat{background:var(--card-bg);backdrop-filter:blur(var(--blur));box-shadow:var(--shadow);border-radius:18px;padding:14px;}
+  .msgs{height:60vh;overflow:auto;padding:8px;display:flex;flex-direction:column;gap:10px;}
+
+  /* ✅ message layout with avatar */
+  .msg{display:flex;gap:10px;align-items:flex-start;}
+  .avatar{
+    width:38px;height:38px;border-radius:999px;object-fit:cover;
+    cursor:pointer;border:1px solid rgba(103,80,164,.18);flex:0 0 auto;
+  }
+  .bubble{
+    flex:1;min-width:0;padding:10px 12px;border-radius:14px;
+    background:rgba(255,255,255,.28);border:1px solid rgba(103,80,164,.12);
+  }
+  .meta{font-size:12px;opacity:.75;margin-bottom:4px;}
+  .text{word-wrap:break-word;white-space:pre-wrap;}
+
+  .bar{display:flex;gap:10px;margin-top:10px;}
+  .bar input{flex:1;border:none;border-radius:14px;padding:12px;background:rgba(255,255,255,.35);color:var(--text);}
+  .btn{padding:10px 14px;border-radius:999px;border:none;cursor:pointer;}
+  .btn.primary{background:linear-gradient(135deg,#6750a4,#9f7aea);color:#fff;}
+  .btn.ghost{background:rgba(255,255,255,.25);border:1px solid rgba(103,80,164,.14);}
+
+  /* ✅ profile modal */
+  .modal-mask{
+    position:fixed;inset:0;background:rgba(0,0,0,.35);
+    display:none;align-items:center;justify-content:center;
+    z-index:9999;padding:16px;
+  }
+  .modal{
+    width:min(420px,92vw);background:var(--card-bg);
+    border-radius:18px;box-shadow:var(--shadow);
+    padding:16px;border:1px solid rgba(103,80,164,.15);
+  }
+  .modal-head{display:flex;gap:12px;align-items:center;}
+  .modal-avatar{
+    width:56px;height:56px;border-radius:999px;object-fit:cover;
+    border:1px solid rgba(103,80,164,.18);
+  }
+  .modal-name{font-weight:700;}
+  .modal-username{font-size:12px;opacity:.75;margin-top:2px;}
+  .modal-bio{margin-top:10px;opacity:.9;white-space:pre-wrap;word-wrap:break-word;}
+  .modal-actions{display:flex;gap:10px;margin-top:14px;justify-content:flex-end;}
+{% endblock %}
+
+{% block content %}
+<div class="wrap">
+  <div class="chat">
+
+    <div class="msgs" id="msgs">
+      {% for m in messages %}
+        <div class="msg" data-id="{{ m.id }}">
+          <img
+            class="avatar"
+            src="{{ m.avatar_url }}"
+            alt="avatar"
+            data-username="{{ m.author_username }}"
+            title="点击查看资料"
+          >
+          <div class="bubble">
+            <div class="meta">{{ m.display_name|default:m.author_name|default:"unknown" }} · {{ m.created_at|date:"H:i" }}</div>
+            <div class="text">{{ m.content }}</div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    <div class="bar">
+      <input id="content" placeholder="输入消息，回车发送…" maxlength="500" autocomplete="off">
+      <button class="btn primary" id="sendBtn">发送</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ✅ Profile Modal -->
+<div class="modal-mask" id="profileMask" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-head">
+      <img class="modal-avatar" id="pAvatar" src="" alt="avatar">
+      <div>
+        <div class="modal-name" id="pName">User</div>
+        <div class="modal-username" id="pUsername">@username</div>
+      </div>
+    </div>
+    <div class="modal-bio" id="pBio"></div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="closeProfile">关闭</button>
+      <a class="btn primary" id="goProfile" href="#">去Ta的主页</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const msgsEl = document.getElementById("msgs");
+  const inputEl = document.getElementById("content");
+  const sendBtn = document.getElementById("sendBtn");
+
+  // ✅ modal refs
+  const maskEl = document.getElementById("profileMask");
+  const closeBtn = document.getElementById("closeProfile");
+  const pAvatar = document.getElementById("pAvatar");
+  const pName = document.getElementById("pName");
+  const pUsername = document.getElementById("pUsername");
+  const pBio = document.getElementById("pBio");
+  const goProfile = document.getElementById("goProfile");
+
+  // ✅ URL templates（用 replace 填 username）
+  const profileUrlTpl = "{% url 'social:profile' username='__USERNAME__' %}";
+  const profileCardUrlTpl = "{% url 'social:profile_card' username='__USERNAME__' %}";
+
+  let sinceId = 0;
+  const last = msgsEl.querySelector(".msg:last-child");
+  if (last) sinceId = parseInt(last.dataset.id || "0", 10);
+
+  function getCookie(name) {
+    const v = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+    return v ? v.pop() : '';
+  }
+  const csrftoken = getCookie('csrftoken');
+
+  function scrollToBottom() {
+    msgsEl.scrollTop = msgsEl.scrollHeight;
+  }
+  scrollToBottom();
+
+  function openProfileModal(data) {
+    pAvatar.src = data.avatar_url || "";
+    pName.textContent = data.nickname || data.username || "User";
+    pUsername.textContent = "@" + (data.username || "");
+    pBio.textContent = data.bio || "这个用户还没有签名～";
+    goProfile.href = profileUrlTpl.replace("__USERNAME__", data.username);
+
+    maskEl.style.display = "flex";
+    maskEl.setAttribute("aria-hidden", "false");
+  }
+
+  function closeProfileModal() {
+    maskEl.style.display = "none";
+    maskEl.setAttribute("aria-hidden", "true");
+  }
+
+  closeBtn.addEventListener("click", closeProfileModal);
+  maskEl.addEventListener("click", (e) => {
+    if (e.target === maskEl) closeProfileModal();
+  });
+
+  // ✅ 点击头像 → 拉取卡片数据 → 弹窗
+  msgsEl.addEventListener("click", async (e) => {
+    const avatar = e.target.closest(".avatar");
+    if (!avatar) return;
+
+    const username = (avatar.dataset.username || "").trim();
+    if (!username) return; // 匿名/系统消息
+
+    try {
+      const url = profileCardUrlTpl.replace("__USERNAME__", encodeURIComponent(username));
+      const res = await fetch(url);
+      if (!res.ok) return;
+      const data = await res.json();
+      openProfileModal(data);
+    } catch(err) {}
+  });
+
+  async function poll() {
+    try {
+      const res = await fetch("{% url 'social:poll_messages' slug=room.slug %}?since_id=" + sinceId);
+      if (!res.ok) return;
+      const data = await res.json();
+      const list = data.messages || [];
+
+      if (list.length) {
+        for (const m of list) {
+          const row = document.createElement("div");
+          row.className = "msg";
+          row.dataset.id = m.id;
+
+          const img = document.createElement("img");
+          img.className = "avatar";
+          img.src = m.avatar_url || "";
+          img.alt = "avatar";
+          img.title = "点击查看资料";
+          img.dataset.username = m.author_username || "";
+
+          const bubble = document.createElement("div");
+          bubble.className = "bubble";
+
+          const meta = document.createElement("div");
+          meta.className = "meta";
+          meta.textContent = `${m.author || "unknown"} · ${m.created_at || ""}`;
+
+          const text = document.createElement("div");
+          text.className = "text";
+          text.textContent = m.content || "";
+
+          bubble.appendChild(meta);
+          bubble.appendChild(text);
+
+          row.appendChild(img);
+          row.appendChild(bubble);
+
+          msgsEl.appendChild(row);
+          sinceId = Math.max(sinceId, m.id);
+        }
+        scrollToBottom();
+      }
+    } catch(e) {}
+  }
+
+  async function send() {
+    const content = inputEl.value.trim();
+    if (!content) return;
+
+    const form = new FormData();
+    form.append("content", content);
+
+    const res = await fetch("{% url 'social:send_message' slug=room.slug %}", {
+      method: "POST",
+      headers: { "X-CSRFToken": csrftoken },
+      body: form
+    });
+
+    if (res.ok) {
+      inputEl.value = "";
+      await poll(); // 立刻刷新一次
+    }
+  }
+
+  sendBtn.addEventListener("click", send);
+  inputEl.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") send();
+  });
+
+  setInterval(poll, 1000);
+</script>
+{% endblock %}

@@ -1,0 +1,15 @@
+<div class="card">
+  {% with first_img=post.images.all.0 %}
+    {% if first_img %}
+      <img class="cover" src="{{ first_img.image.url }}" alt="cover">
+    {% else %}
+      <div class="cover"></div>
+    {% endif %}
+  {% endwith %}
+  <div class="card-body">
+    {% if post.title %}
+      <div class="card-title">{{ post.title }}</div>
+    {% endif %}
+    <div class="card-text">{{ post.content|truncatechars:90 }}</div>
+  </div>
+</div>

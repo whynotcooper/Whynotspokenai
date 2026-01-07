@@ -1,0 +1,252 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="{% block html_lang %}zh-CN{% endblock %}">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+  <title>{% block title %}WhyNotEnglish{% endblock %}</title>
+
+  <!-- 谷歌图标 & 思源黑体 -->
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet"/>
+
+  {% block extra_head %}{% endblock %}
+
+  <style>
+    :root{
+      --bg:linear-gradient(135deg,#f5f7fa 0%, #c3cfe2 100%);
+      --card-bg:rgba(255,255,255,.50);
+      --text:#1c1e21;
+      --primary:#6750a4;
+      --radius:24px;
+      --shadow:0 8px 32px rgba(0,0,0,.12);
+      --blur:20px;
+    }
+    [data-theme="dark"]{
+      --bg:linear-gradient(135deg,#1e1e2e 0%, #302b63 100%);
+      --card-bg:rgba(30,30,46,.50);
+      --text:#e2e8f0;
+      --primary:#a78bfa;
+    }
+
+    *{margin:0;padding:0;box-sizing:border-box;font-family:'Noto Sans SC',sans-serif;}
+    body{
+      min-height:100vh;
+      background:var(--bg);
+      color:var(--text);
+      transition:.4s;
+    }
+
+    header{
+      width:100%;
+      padding:24px 48px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+    }
+    header h1{
+      font-size:26px;
+      font-weight:700;
+      color:var(--text);
+      letter-spacing:1px;
+    }
+
+    .header-right{
+      display:flex;
+      align-items:center;
+      gap:16px;
+    }
+
+    #themeToggle{
+      background:var(--card-bg);
+      border:none;
+      color:var(--text);
+      cursor:pointer;
+      font-size:22px;
+      border-radius:999px;
+      padding:8px 10px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      backdrop-filter:blur(var(--blur));
+      box-shadow:var(--shadow);
+    }
+
+    .auth-actions{
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+
+    .auth-btn{
+      padding:8px 18px;
+      border-radius:999px;
+      border:1px solid rgba(103,80,164,.25);
+      background:var(--card-bg);
+      color:var(--text);
+      font-size:14px;
+      text-decoration:none;
+      backdrop-filter:blur(var(--blur));
+      box-shadow:var(--shadow);
+      display:flex;
+      align-items:center;
+      gap:6px;
+      transition:.3s;
+    }
+    .auth-btn span.material-symbols-rounded{font-size:18px;}
+    .auth-btn:hover{
+      transform:translateY(-1px);
+      box-shadow:0 10px 24px rgba(0,0,0,.18);
+    }
+    .auth-btn.primary{
+      background:linear-gradient(135deg,#6750a4,#9f7aea);
+      color:#fff;
+      border:none;
+    }
+
+    .user-pill{
+      padding:8px 14px;
+      border-radius:999px;
+      background:var(--card-bg);
+      border:1px solid rgba(103,80,164,.25);
+      display:flex;
+      align-items:center;
+      gap:8px;
+      font-size:14px;
+      color:var(--text);
+      backdrop-filter:blur(var(--blur));
+      box-shadow:var(--shadow);
+    }
+    .user-avatar{
+      width:28px;height:28px;border-radius:50%;
+      background:linear-gradient(135deg,#6750a4,#9f7aea);
+      display:flex;align-items:center;justify-content:center;
+      color:#fff;font-size:16px;font-weight:600;
+    }
+
+    .auth-modal-backdrop{
+      position:fixed;inset:0;
+      background:rgba(15,23,42,.40);
+      display:none;align-items:center;justify-content:center;
+      z-index:99;
+    }
+    .auth-modal{
+      width:clamp(280px,90vw,360px);
+      background:var(--card-bg);
+      border-radius:20px;
+      padding:22px 20px 18px;
+      backdrop-filter:blur(var(--blur));
+      box-shadow:var(--shadow);
+      position:relative;
+    }
+    .auth-modal h2{font-size:18px;margin-bottom:6px;color:var(--text);}
+    .auth-modal p{font-size:14px;color:var(--text);opacity:.85;}
+    .auth-modal-header{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+    .auth-modal-icon{
+      width:32px;height:32px;border-radius:12px;
+      background:linear-gradient(135deg,#f97316,#ec4899);
+      display:flex;align-items:center;justify-content:center;color:#fff;
+    }
+    .auth-modal-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:16px;}
+    .modal-btn{
+      padding:8px 14px;border-radius:999px;border:none;
+      cursor:pointer;font-size:13px;text-decoration:none;
+      display:inline-flex;align-items:center;justify-content:center;
+    }
+    .modal-btn.secondary{
+      background:transparent;border:1px solid rgba(148,163,184,.6);
+      color:var(--text);
+    }
+    .modal-btn.primary{
+      background:linear-gradient(135deg,#6750a4,#9f7aea);
+      color:#fff;
+    }
+
+    {% block page_style %}{% endblock %}
+  </style>
+</head>
+
+<body {% if request.COOKIES.theme == 'dark' %}data-theme="dark"{% endif %}>
+  <header>
+    <h1>{% block header_title %}AI 口语教练{% endblock %}</h1>
+
+    <div class="header-right">
+      <button id="themeToggle" aria-label="切换主题">
+        <span class="material-symbols-rounded">brightness_4</span>
+      </button>
+
+      <div class="auth-actions">
+        {% if login_in %}
+          <a class="user-pill" style="text-decoration:none;" href="{% url 'social:profile' username=username %}">
+            <div class="user-avatar">{{ username|first|default:"U" }}</div>
+            <span>欢迎回来，{{ username }}</span>
+          </a>
+
+          <!-- ✅ 退出改成 accounts:logout -->
+          <a href="{% url 'accounts:logout' %}" class="auth-btn">
+            <span class="material-symbols-rounded">logout</span>
+            退出
+          </a>
+        {% else %}
+          <!-- ✅ 登录改成 accounts:login，并带 next 回跳 -->
+          <a href="{% url 'accounts:login' %}?next={{ request.get_full_path|urlencode }}" class="auth-btn">
+            <span class="material-symbols-rounded">login</span>
+            登录
+          </a>
+
+          <!-- ✅ 注册改成 accounts:register，并带 next（注册成功也能回跳） -->
+          <a href="{% url 'accounts:register' %}?next={{ request.get_full_path|urlencode }}" class="auth-btn primary">
+            <span class="material-symbols-rounded">person_add</span>
+            注册
+          </a>
+        {% endif %}
+      </div>
+    </div>
+  </header>
+
+  {% block content %}{% endblock %}
+
+  {% block modals %}
+  <div class="auth-modal-backdrop" id="authModalBackdrop">
+    <div class="auth-modal">
+      <div class="auth-modal-header">
+        <div class="auth-modal-icon">
+          <span class="material-symbols-rounded" style="font-size:20px;">lock</span>
+        </div>
+        <div>
+          <h2>需要登录后才能使用</h2>
+          <p>请先登录账号，再进入口语训练模块。</p>
+        </div>
+      </div>
+      <div class="auth-modal-footer">
+        <button class="modal-btn secondary" id="modalCancelBtn">稍后再说</button>
+
+        <!-- ✅ 弹窗去登录也带 next -->
+        <a href="{% url 'accounts:login' %}?next={{ request.get_full_path|urlencode }}"
+           class="modal-btn primary"
+           id="modalLoginBtn">去登录</a>
+      </div>
+    </div>
+  </div>
+  {% endblock %}
+
+  <script>
+    window.IS_AUTHENTICATED = {{ login_in|yesno:"true,false" }};
+
+    const themeToggle = document.getElementById('themeToggle');
+    themeToggle?.addEventListener('click', () => {
+      const isDark = document.body.dataset.theme === 'dark';
+      if (isDark) {
+        document.body.dataset.theme = '';
+        document.cookie = "theme=light; path=/; max-age=31536000";
+      } else {
+        document.body.dataset.theme = 'dark';
+        document.cookie = "theme=dark; path=/; max-age=31536000";
+      }
+    });
+  </script>
+
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -26,7 +26,7 @@ class VoiceTranscriptionPipeline:
         self.model.eval()
 
     def transcribe_audio(self, audio_path, language="auto", use_itn=False,
-                         ban_emo_unk=False, output_timestamp=False):
+                         ban_emo_unk=True, output_timestamp=False):
         """
         转录音频文件
         """
@@ -237,8 +237,131 @@ Do the following:
 Output ONLY valid JSON with keys: "issues", "reason", "answer", "phrases", "sentences".          
 """.strip(),
 
-            "task2": """
-            """.strip(),
+"task2": """
+You are an expert TOEFL Speaking coach. Analyze the student's response to the given TOEFL Speaking Task 2 (Integrated – Campus-related) question and provide feedback in strict JSON format.
+
+Given:
+- The reading passage (short campus-related text)
+- The listening passage (student’s opinion or conversation, transcribed text)
+- The TOEFL question (prompt)
+- The student's spoken response (transcribed text)
+
+Do the following:
+
+1. **issues**: Identify exactly THREE major problems in the student's response. Focus on integrated-task issues, such as:
+   - Missing or incorrect key points from the reading
+   - Missing or incorrect key points from the listening
+   - Weak connection between reading and listening
+   - Lack of clear summary of the situation
+   - Poor organization or unclear structure
+   - Serious grammar/word choice/pronunciation problems that affect clarity
+
+2. **reason**: Explain how you evaluated the response against TOEFL Integrated Speaking Task 2 criteria:
+   - Content: Does the student accurately convey the key points from BOTH the reading and listening, and correctly show how they are related?
+   - Task fulfillment: Does the response clearly answer the question and explain the speaker’s attitude/reasons?
+   - Coherence: Is the response logically organized with a clear beginning, middle, and end?
+   - Language use: Is the language generally clear, with appropriate grammar, vocabulary, and linking expressions?
+
+   Refer directly to what the student DID and DID NOT include from the reading and listening.
+
+3. **answer**: Write a high-scoring (4.0/4.0) model answer (about 110–130 words) that:
+   - Clearly summarizes the relevant point(s) from the reading passage
+   - Clearly explains the speaker’s opinion in the listening and the reasons given
+   - Shows the relationship between the reading and listening (agreement, disagreement, change, etc.)
+   - Is well organized, easy to follow, and sounds natural for a 60-second TOEFL response
+
+4. **phrases**: List exactly FIVE useful academic/idiomatic phrases that are relevant to campus-related integrated tasks and expressing opinions or summaries (e.g., “The announcement states that…”, “The student argues that…”).
+
+5. **sentences**: Provide ONE example sentence for EACH phrase, in the same order. The sentences should be natural and clearly show how to use the phrases in TOEFL Task 2 responses.
+
+Output ONLY valid JSON with keys: "issues", "reason", "answer", "phrases", "sentences".
+Do NOT include any extra text outside the JSON.
+""".strip(),
+"task3": """
+You are an expert TOEFL Speaking coach. Analyze the student's response to the given TOEFL Speaking Task 3 (Integrated – Academic) question and provide feedback in strict JSON format.
+
+Given:
+- The reading passage (short academic text, e.g., a concept or theory)
+- The listening passage (professor's lecture, transcribed text)
+- The TOEFL question (prompt)
+- The student's spoken response (transcribed text)
+
+Do the following:
+
+1. **issues**: Identify exactly THREE major problems in the student's response. Focus on integrated-task issues, such as:
+   - Missing or incorrect key points from the reading
+   - Missing or incorrect key points from the lecture
+   - Failure to explain how the lecture relates to / supports / contradicts the reading
+   - Overly general summary with lack of specific details or examples
+   - Poor organization or unclear structure
+   - Serious grammar/word choice/pronunciation problems that affect clarity
+
+2. **reason**: Explain how you evaluated the response against TOEFL Integrated Speaking Task 3 criteria:
+   - Content: Does the student accurately explain the key ideas from BOTH the reading and the lecture?
+   - Integration: Does the response clearly show how the professor’s points relate to the idea(s) in the reading (support, challenge, give examples, extend, etc.)?
+   - Task fulfillment: Does the response clearly answer the question and focus on explaining the relationship between the reading and listening, rather than giving the student’s own opinion?
+   - Coherence: Is the response logically organized with a clear beginning (topic), middle (key points and relationships), and end (brief wrap-up)?
+   - Language use: Is the language generally clear, with appropriate academic vocabulary, grammar, and linking expressions?
+
+   Refer directly to what the student DID and DID NOT include from the reading and lecture.
+
+3. **answer**: Write a high-scoring (4.0/4.0) model answer (about 110–130 words) that:
+   - Briefly introduces the topic from the reading passage
+   - Clearly explains the main points from the lecture that relate to this topic
+   - Clearly describes how the lecture supports, illustrates, or challenges the idea(s) in the reading
+   - Is well organized, easy to follow, and sounds natural for a 60-second TOEFL response
+
+4. **phrases**: List exactly FIVE useful academic/idiomatic phrases that are relevant to Integrated Task 3, especially for explaining relationships between a reading and a lecture (e.g., “The reading passage introduces the concept of…”, “The professor elaborates on this idea by…”).
+
+5. **sentences**: Provide ONE example sentence for EACH phrase, in the same order. The sentences should be natural and clearly show how to use the phrases in TOEFL Task 3 responses.
+
+Output ONLY valid JSON with keys: "issues", "reason", "answer", "phrases", "sentences".
+Do NOT include any extra text outside the JSON.
+""".strip(),
+"task4": """
+You are an expert TOEFL Speaking coach. Analyze the student's response to the given TOEFL Speaking Task 4 (Integrated – Academic) question and provide feedback in strict JSON format.
+
+Given:
+- The reading passage (academic text)
+- The lecture passage (professor’s explanation, transcribed text)
+- The TOEFL question (prompt)
+- The student's spoken response (transcribed text)
+
+Do the following:
+
+1. **issues**: Identify exactly THREE major problems in the student's response. Focus on integrated-task issues, such as:
+   - Missing or incorrect key points from the reading
+   - Missing or incorrect key points from the lecture
+   - Failure to show the relationship between the reading and the lecture
+   - Misrepresentation of academic concepts
+   - Poor organization or unclear structure
+   - Serious grammar/word choice/pronunciation problems that affect clarity
+
+2. **reason**: Explain how you evaluated the response against TOEFL Integrated Speaking Task 4 criteria:
+   - Content: Does the student accurately convey the key concepts from BOTH the reading and the lecture?
+   - Integration: Does the response clearly explain how the lecture supports, explains, or gives examples of ideas from the reading?
+   - Coherence: Is the explanation logical, well-organized, and easy to follow?
+   - Language use: Is the language clear and appropriate for an academic explanation?
+
+   Refer directly to what the student DID and DID NOT include from the reading and lecture.
+
+3. **answer**: Write a high-scoring (4.0/4.0) model answer (about 130–150 words) that:
+   - Accurately summarizes the main idea(s) from the reading
+   - Clearly explains the professor’s examples or elaborations in the lecture
+   - Explicitly connects the reading and lecture (how the lecture supports/extends the reading)
+   - Is coherent, concise, and natural for a 60-second TOEFL response
+
+4. **phrases**: List exactly FIVE useful academic/lecture-related phrases that are relevant to Task 4 integration (e.g., “According to the passage…”, “The professor expands on this idea by…”).
+
+5. **sentences**: Provide ONE example sentence for EACH phrase, in the same order. The sentences should be natural and clearly demonstrate how to use the phrases in TOEFL Task 4 responses.
+
+Output ONLY valid JSON with keys: "issues", "reason", "answer", "phrases", "sentences".
+Do NOT include any extra text outside the JSON.
+""".strip(),
+
+
+
+
             
   "followup": """
 You are an expert TOEFL Speaking tutor and English learning coach.
@@ -332,7 +455,7 @@ Constraints:
     def analyze_task1(self, question: str, student_answer: str) -> dict:
         """
         分析 TOEFL Speaking Task 1
-        :param question: 题目文本
+       :param question: 题目文本
         :param student_answer: 学生回答文本（语音转写后）
         :return: 结构化反馈 dict
         """
@@ -359,6 +482,63 @@ Student's Response:
             print(f"[ERROR] Task1 Analysis Failed: {error_msg}")
             self._log_interaction("task1", input_data, error=error_msg)
             raise
+    def analyze_task2(
+        self,
+        reading_passage: str,
+        listening_passage: str,
+        question: str,
+        student_answer: str,
+    ) -> dict:
+        """
+        分析 TOEFL Speaking Task 2（Integrated – Campus-related）
+
+        :param reading_passage: 阅读材料文本
+        :param listening_passage: 听力材料文本（语音已转写）
+        :param question: 题目文本（Task 2 的 prompt）
+        :param student_answer: 学生回答文本（语音转写后）
+        :return: 结构化反馈 dict
+        """
+        required_keys = {"issues", "reason", "answer", "phrases", "sentences"}
+        input_data = {
+            "reading_passage": reading_passage,
+            "listening_passage": listening_passage,
+            "question": question,
+            "student_answer": student_answer,
+        }
+
+        try:
+            user_message = f"""TOEFL Speaking Task 2 (Integrated) Data:
+
+Reading Passage:
+{reading_passage}
+
+Listening Passage (Transcript):
+{listening_passage}
+
+TOEFL Question:
+{question}
+
+Student's Response:
+{student_answer}"""
+
+            # 使用你在 prompts 里配置好的 task2 提示词
+            result = self._call_llm(self.prompts["task2"], user_message)
+
+            if not self._validate_feedback(result, required_keys):
+                raise ValueError(
+                    f"Missing required keys in model output. "
+                    f"Expected: {required_keys}, Got: {result.keys()}"
+                )
+
+            self._log_interaction("task2", input_data, result)
+            return result
+
+        except Exception as e:
+            error_msg = str(e)
+            print(f"[ERROR] Task2 Analysis Failed: {error_msg}")
+            self._log_interaction("task2", input_data, error=error_msg)
+            raise
+
     def answer_followup_question(
         self,
         reading_text: str,
@@ -427,6 +607,112 @@ Student's Response:
                 f.write(json.dumps(log_record, ensure_ascii=False) + "\n")
 
         return result
+    def analyze_task3(
+        self,
+        reading_passage: str,
+        listening_passage: str,
+        question: str,
+        student_answer: str,
+    ) -> dict:
+        """
+        分析 TOEFL Speaking Task 3（Integrated – Academic）
+
+        :param reading_passage: 阅读材料文本（学术概念/理论等）
+        :param listening_passage: 听力材料文本（教授讲解，语音已转写）
+        :param question: 题目文本（Task 3 的 prompt）
+        :param student_answer: 学生回答文本（语音转写后）
+        :return: 结构化反馈 dict
+        """
+        required_keys = {"issues", "reason", "answer", "phrases", "sentences"}
+        input_data = {
+            "reading_passage": reading_passage,
+            "listening_passage": listening_passage,
+            "question": question,
+            "student_answer": student_answer,
+        }
+
+        try:
+            user_message = f"""TOEFL Speaking Task 3 (Integrated – Academic) Data:
+
+Reading Passage:
+{reading_passage}
+
+Listening Passage (Lecture Transcript):
+{listening_passage}
+
+TOEFL Question:
+{question}
+
+Student's Response:
+{student_answer}"""
+
+            # 使用在 prompts 里配置好的 task3 提示词
+            result = self._call_llm(self.prompts["task3"], user_message)
+
+            if not self._validate_feedback(result, required_keys):
+                raise ValueError(
+                    f"Missing required keys in model output. "
+                    f"Expected: {required_keys}, Got: {result.keys()}"
+                )
+
+            self._log_interaction("task3", input_data, result)
+            return result
+
+        except Exception as e:
+            error_msg = str(e)
+            print(f"[ERROR] Task3 Analysis Failed: {error_msg}")
+            self._log_interaction("task3", input_data, error=error_msg)
+            raise
+    def analyze_task4(
+        self,
+        listening_passage: str,
+        question: str,
+        student_answer: str,
+    ) -> dict:
+        """
+        分析 TOEFL Speaking Task 4（Integrated – Academic Lecture）
+
+        :param listening_passage: 听力材料文本（学术讲座/课堂内容，语音已转写）
+        :param question: 题目文本（Task 4 的 prompt）
+        :param student_answer: 学生回答文本（语音转写后）
+        :return: 结构化反馈 dict
+        """
+        required_keys = {"issues", "reason", "answer", "phrases", "sentences"}
+        input_data = {
+            "listening_passage": listening_passage,
+            "question": question,
+            "student_answer": student_answer,
+        }
+
+        try:
+            user_message = f"""TOEFL Speaking Task 4 (Integrated – Academic Lecture) Data:
+
+Listening Passage (Lecture Transcript):
+{listening_passage}
+
+TOEFL Question:
+{question}
+
+Student's Response:
+{student_answer}"""
+
+            # 使用在 prompts 里配置好的 task4 提示词
+            result = self._call_llm(self.prompts["task4"], user_message)
+
+            if not self._validate_feedback(result, required_keys):
+                raise ValueError(
+                    f"Missing required keys in model output. "
+                    f"Expected: {required_keys}, Got: {result.keys()}"
+                )
+
+            self._log_interaction("task4", input_data, result)
+            return result
+
+        except Exception as e:
+            error_msg = str(e)
+            print(f"[ERROR] Task4 Analysis Failed: {error_msg}")
+            self._log_interaction("task4", input_data, error=error_msg)
+            raise
 
 import os
 import io
@@ -701,12 +987,107 @@ class FeedbackPDFGenerator:
         except Exception as e:
             print(f"PDF生成失败: {e}")
             raise
+    @classmethod
+    def generate_pdf_report2(cls, task, student_answer, feedback):
+        """生成PDF报告"""
+        
+        # 获取样式
+        styles = PDFStyleManager.get_styles()
+        
+        # 准备文件路径
+        filename = f"task1_{task.id}_report.pdf"
+        filepath = os.path.join(settings.MEDIA_ROOT, 'reports', filename)
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        
+        # 创建PDF文档
+        pdf_io = io.BytesIO()
+        doc = SimpleDocTemplate(
+            pdf_io, 
+            pagesize=A4, 
+            topMargin=30, 
+            bottomMargin=30,
+            leftMargin=40,
+            rightMargin=40
+        )
+        
+        # 构建内容
+        builder = PDFContentBuilder(styles)
+        
+        # 1. 报告标题
+        builder.add_title(f"TOEFL 口语 Task 1 评分报告：{task.name}")
+        
+        # 2. 题目信息
+        reading_text = cls._clean_text(task.questiontext)
+        if reading_text:
+            builder.add_heading("题目内容")
+            builder.add_paragraph(reading_text)
+        
+        # 3. 学生回答
+        builder.add_heading("你的回答")
+        student_answer_clean = cls._clean_text(student_answer) or "（无回答）"
+        builder.add_paragraph(student_answer_clean)
+        builder.add_spacer(18)
+        
+        # 4. AI 参考答案
+        model_answer = cls._clean_text(feedback.get('answer', ''))
+        if model_answer:
+            builder.add_heading("AI 参考答案")
+            builder.add_paragraph(model_answer)
+            builder.add_spacer(12)
+        
+        # 5. 问题与建议
+        issues = cls._clean_text(feedback.get('issues', ''))
+        reason = cls._clean_text(feedback.get('reason', ''))
+        
+        if issues or reason:
+            builder.add_heading("问题与建议")
+            if issues:
+                builder.add_bullet_point("问题", issues)
+            if reason:
+                builder.add_bullet_point("建议", reason)
+            builder.add_spacer(12)
+        
+        # 6. 推荐短语
+        phrases = feedback.get('phrases')
+        if phrases:
+            phrase_text = cls._format_list_data(phrases)
+            if phrase_text:
+                builder.add_heading("推荐短语")
+                builder.add_paragraph(phrase_text)
+                builder.add_spacer(12)
+        
+        # 7. 推荐句型
+        sentences = feedback.get('sentences')
+        if sentences:
+            sentence_text = cls._format_list_data(sentences)
+            if sentence_text:
+                builder.add_heading("推荐句型")
+                builder.add_paragraph(sentence_text)
+        
+        # 构建PDF
+        try:
+            doc.build(builder.get_content())
+            
+            # 写入文件
+            with open(filepath, 'wb') as f:
+                f.write(pdf_io.getvalue())
+            
+            print(f"PDF报告生成成功: {filename}")
+            return urljoin(settings.MEDIA_URL, f'reports/{filename}')
+            
+        except Exception as e:
+            print(f"PDF生成失败: {e}")
+            raise
+
 
 
 # 向后兼容的快捷函数
 def generate_pdf_report(task, student_answer, feedback):
     """生成PDF报告（快捷函数）"""
     return FeedbackPDFGenerator.generate_pdf_report(task, student_answer, feedback)
+def generate_pdf_report2(task, student_answer, feedback):
+    """生成PDF报告（快捷函数）"""
+    return FeedbackPDFGenerator.generate_pdf_report2(task, student_answer, feedback)
 
 
 

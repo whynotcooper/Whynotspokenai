@@ -1,0 +1,463 @@
+<!-- templates/show_task3.html -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ task.name }} | TOEFL Task3</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #f7f5ff 0%, #e6f0ff 100%);
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 20px;
+            margin-bottom: 30px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 6px;
+            background: linear-gradient(90deg, #8e44ad, #9b59b6, #2980b9);
+        }
+
+        h1 {
+            font-size: 2rem;
+            color: #2c3e50;
+            margin-bottom: 12px;
+        }
+
+        .section {
+            background: white;
+            border-radius: 14px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+        }
+
+        .section h2 {
+            font-size: 1.4rem;
+            color: #2c3e50;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section h2 i {
+            color: #8e44ad;
+        }
+
+        .section-content {
+            background: #f8fafc;
+            padding: 16px;
+            border-radius: 10px;
+            border-left: 4px solid #8e44ad;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 1.05rem;
+            line-height: 1.7;
+        }
+
+        .audio-player {
+            margin-top: 12px;
+        }
+
+        .hidden-content {
+            display: none;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #6c5ce7, #2980b9);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: opacity 0.2s;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn-reveal {
+            margin-top: 16px;
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+        }
+
+        .btn-secondary {
+            background: #7f8c8d;
+        }
+
+        .btn-secondary:hover {
+            background: #95a5a6;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: #7f8c8d;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .back-link:hover {
+            color: #3498db;
+            text-decoration: underline;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .timer {
+            font-weight: bold;
+            color: #e74c3c;
+            margin-left: 10px;
+        }
+
+        textarea {
+            width: 100%;
+            box-sizing: border-box;
+            min-height: 120px;
+            resize: vertical;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            font-family: inherit;
+            background: #f8fafc;
+        }
+
+        #feedbackContent p {
+            margin-bottom: 8px;
+        }
+
+        #pdfLink {
+            text-decoration: none;
+            color: #2980b9;
+            font-weight: 600;
+        }
+
+        #pdfLink:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 600px) {
+            .section {
+                padding: 18px;
+            }
+            h1 {
+                font-size: 1.7rem;
+            }
+            .section h2 {
+                font-size: 1.25rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-graduation-cap"></i> {{ task.name }}</h1>
+        </header>
+
+        <!-- 学术阅读文本 -->
+        <div class="section">
+            <h2><i class="fas fa-book"></i> 阅读文本（学术概念/理论）</h2>
+            <div class="section-content">
+                {{ task.readingtext|default:"无阅读内容" }}
+            </div>
+        </div>
+
+        <!-- 问题 -->
+        <div class="section">
+            <h2><i class="fas fa-question-circle"></i> 问题</h2>
+            <div class="section-content">
+                {{ task.questiontext|default:"无问题描述" }}
+            </div>
+        </div>
+
+        <!-- 讲座音频 -->
+        <div class="section">
+            <h2><i class="fas fa-chalkboard-teacher"></i> 听力材料（课堂讲解）</h2>
+            <div class="audio-player">
+                {% if task.audio %}
+                    <audio controls style="width: 100%; height: 50px;">
+                        <source src="{{ task.audio.url }}" type="audio/mp4">
+                        <source src="{{ task.audio.url }}" type="audio/mpeg">
+                        您的浏览器不支持音频播放。
+                    </audio>
+                {% else %}
+                    <p style="color: #e74c3c;">⚠️ 未上传听力音频</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 录音与作答 -->
+        <div class="section" id="recordSection">
+            <h2><i class="fas fa-microphone"></i> 请回答（60秒）</h2>
+            <p>点击“开始录音”后，你有 60 秒时间根据阅读和讲座内容进行概括与说明。</p>
+            <button id="startBtn" class="btn"><i class="fas fa-record-vinyl"></i> 开始录音</button>
+            <span id="timer" class="timer hidden">剩余: <span id="countdown">60</span> 秒</span>
+            <button id="stopBtn" class="btn btn-secondary hidden">提前结束</button>
+            <div id="recordStatus" style="margin-top: 10px;"></div>
+        </div>
+
+        <!-- 转写文本编辑区 -->
+        <div class="section hidden" id="editSection">
+            <h2><i class="fas fa-keyboard"></i> 你的回答（可编辑）</h2>
+            <textarea id="transcriptionText" placeholder="语音转写结果将显示在这里..."></textarea>
+            <br><br>
+            <button id="confirmBtn" class="btn">
+                <i class="fas fa-wand-magic-sparkles"></i> 确认最终答案并生成报告
+            </button>
+        </div>
+
+        <!-- AI 反馈 + PDF 下载 -->
+        <div class="section hidden" id="feedbackSection">
+            <h2><i class="fas fa-chart-line"></i> AI 评分报告</h2>
+            <div id="feedbackContent"></div>
+            <br>
+            <a id="pdfLink" target="_blank" style="display:none;">📥 下载 PDF 报告</a>
+            <br><br>
+            <button id="followupBtn" class="btn btn-secondary hidden">
+                <i class="fas fa-comments"></i> 进入追问与精讲
+            </button>
+        </div>
+
+        <!-- 参考答案与思路 -->
+        <div class="section">
+            <button id="toggleAnswersBtn" class="btn btn-reveal">
+                <i class="fas fa-eye"></i> 显示参考答案与解题思路
+            </button>
+
+            <div id="hiddenAnswers" class="hidden-content">
+                <h2><i class="fas fa-lightbulb"></i> 参考答案1</h2>
+                <div class="section-content">
+                    {{ task.answertext1|default:"无答案" }}
+                </div>
+
+                <h2 style="margin-top: 20px;"><i class="fas fa-lightbulb"></i> 参考答案2</h2>
+                <div class="section-content">
+                    {{ task.answertext2|default:"无答案" }}
+                </div>
+
+                <h2 style="margin-top: 20px;"><i class="fas fa-graduation-cap"></i> 解题思路</h2>
+                <div class="section-content">
+                    {{ task.reasontext|default:"无解题思路" }}
+                </div>
+                <h2 style="margin-top: 20px;"><i class="fas fa-headphones"></i> 听力文本</h2>
+                <div class="section-content">
+                   {{ task.listeningtext|default:"无听力文本" }}
+               </div>
+
+            </div>
+        </div>
+
+        <a href="{% url 'spoken_ai:task3_list' %}" class="back-link">
+            ← 返回 Task3 题库列表
+        </a>
+    </div>
+
+    <script>
+        let mediaRecorder;
+        let audioChunks = [];
+        let countdownInterval = null;
+        const task_id = {{ task.id }};
+
+        document.getElementById('startBtn').addEventListener('click', startRecording);
+        document.getElementById('stopBtn').addEventListener('click', stopRecording);
+        document.getElementById('confirmBtn').addEventListener('click', confirmAnswer);
+        document.getElementById('toggleAnswersBtn').addEventListener('click', toggleAnswers);
+
+        function startRecording() {
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(stream => {
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+
+                    mediaRecorder.ondataavailable = event => {
+                        audioChunks.push(event.data);
+                    };
+
+                    mediaRecorder.onstop = () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                        uploadAudio(audioBlob);
+                        stream.getTracks().forEach(track => track.stop());
+                    };
+
+                    mediaRecorder.start();
+                    document.getElementById('startBtn').classList.add('hidden');
+                    document.getElementById('timer').classList.remove('hidden');
+                    document.getElementById('stopBtn').classList.remove('hidden');
+                    document.getElementById('recordStatus').innerText = '正在录音...';
+
+                    // 60秒倒计时（Task3 回答时间）
+                    let timeLeft = 60;
+                    document.getElementById('countdown').innerText = timeLeft;
+                    countdownInterval = setInterval(() => {
+                        timeLeft--;
+                        document.getElementById('countdown').innerText = timeLeft;
+                        if (timeLeft <= 0) {
+                            stopRecording();
+                        }
+                    }, 1000);
+                })
+                .catch(err => {
+                    document.getElementById('recordStatus').innerText = '录音失败: ' + err.message;
+                });
+        }
+
+        function stopRecording() {
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+        }
+
+        function uploadAudio(blob) {
+            const formData = new FormData();
+            formData.append('audio', blob, 'answer.webm');
+
+            // 这里沿用统一的语音处理接口名称，如果你为 Task3 单独写了接口，可以改成 process_task3_audio/
+            fetch(`process_task_audio/`, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('transcriptionText').value = data.transcription;
+                    document.getElementById('editSection').classList.remove('hidden');
+                    document.getElementById('recordSection').classList.add('hidden');
+                } else {
+                    alert('语音处理失败: ' + data.error);
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('上传失败');
+            });
+        }
+
+        function confirmAnswer() {
+            const finalText = document.getElementById('transcriptionText').value.trim();
+            if (!finalText) {
+                alert('请输入你的回答');
+                return;
+            }
+
+            // 调用 Task3 的分析接口，形如 /task3/<id>/analyse_task3/
+            fetch(`analyse_task3/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({ student_answer: finalText })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // 1. 显示评分报告
+                    let html = `<p><strong>评分:</strong> ${data.feedback.score || 'N/A'}</p>`;
+                    html += `<p><strong>问题:</strong> ${data.feedback.issues || ''}</p>`;
+                    html += `<p><strong>建议:</strong> ${data.feedback.reason || ''}</p>`;
+                    html += `<p><strong>参考答案:</strong> ${data.feedback.answer || ''}</p>`;
+                    if (data.feedback.phrases) {
+                        html += `<p><strong>推荐短语:</strong> ${data.feedback.phrases.join(', ')}</p>`;
+                    }
+                    html += `<p><strong>推荐句子:</strong> ${data.feedback.sentences || ''}</p>`;
+                    document.getElementById('feedbackContent').innerHTML = html;
+
+                    // 2. 显示 PDF 链接（如果有）
+                    if (data.pdf_url) {
+                        const link = document.getElementById('pdfLink');
+                        link.href = data.pdf_url;
+                        link.style.display = 'inline';
+                    }
+
+                    // 显示评分区域
+                    document.getElementById('feedbackSection').classList.remove('hidden');
+
+                    // 3. 显示通用 followup 跳转按钮
+                    const followupBtn = document.getElementById('followupBtn');
+                    followupBtn.classList.remove('hidden');
+
+                    followupBtn.onclick = function () {
+                        const baseUrl = "{% url 'spoken_ai:followup' %}";
+
+                        const params = new URLSearchParams({
+                            task_name: "{{ task.name|default:''|escapejs }}",
+                            readingtext: "{{ task.readingtext|default:''|escapejs }}",
+                            questiontext: "{{ task.questiontext|default:''|escapejs }}",
+                            student_answer: finalText,
+                            issues: data.feedback.issues || '',
+                            reason: data.feedback.reason || '',
+                            answer: data.feedback.answer || ''
+                        });
+
+                        window.location.href = baseUrl + "?" + params.toString();
+                    };
+                } else {
+                    alert('分析失败: ' + data.error);
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('提交失败');
+            });
+        }
+
+        function toggleAnswers() {
+            const hiddenDiv = document.getElementById('hiddenAnswers');
+            const btn = document.getElementById('toggleAnswersBtn');
+            if (hiddenDiv.style.display === 'none' || hiddenDiv.style.display === '') {
+                hiddenDiv.style.display = 'block';
+                btn.innerHTML = '<i class="fas fa-eye-slash"></i> 隐藏参考答案';
+            } else {
+                hiddenDiv.style.display = 'none';
+                btn.innerHTML = '<i class="fas fa-eye"></i> 显示参考答案与解题思路';
+            }
+        }
+    </script>
+</body>
+</html>

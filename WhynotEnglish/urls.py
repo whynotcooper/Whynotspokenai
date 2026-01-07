@@ -23,6 +23,10 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('spoken_ai.urls', namespace='spoken_ai')),  #  前台用户系统
+    path('', include(('spoken_ai.urls', 'spoken_ai'), namespace='spoken_ai')),
+    path('social/', include(('social.urls', 'social'), namespace='social')),
+    path('accounts/', include(('accounts.urls', 'accounts'), namespace='accounts')),
 ]
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

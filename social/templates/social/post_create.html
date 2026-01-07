@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}发布图文{% endblock %}
+{% block header_title %}发布图文{% endblock %}
+
+{% block page_style %}
+  .wrap{max-width:860px; margin: 0 auto; padding: 0 24px 40px;}
+  .panel{
+    background: var(--card-bg);
+    backdrop-filter: blur(var(--blur));
+    box-shadow: var(--shadow);
+    border-radius: 18px;
+    padding: 18px;
+  }
+  .row{margin-bottom:12px;}
+  label{display:block; margin-bottom:6px; font-weight:700;}
+  input[type="text"], textarea{
+    width:100%; border:none; border-radius:14px;
+    padding:12px; background: rgba(255,255,255,.35);
+    color: var(--text);
+  }
+  textarea{min-height:140px; resize: vertical;}
+  .btn{padding:10px 14px; border-radius:999px; border:none; cursor:pointer;}
+  .btn.primary{background:linear-gradient(135deg,#6750a4,#9f7aea); color:#fff;}
+{% endblock %}
+
+{% block content %}
+<div class="wrap">
+  <div class="panel">
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+
+      <div class="row">
+        <label>标题（可选）</label>
+        {{ form.title }}
+      </div>
+
+      <div class="row">
+        <label>正文</label>
+        {{ form.content }}
+      </div>
+
+      <div class="row">
+        <label>图片（可多选）</label>
+        <input type="file" name="images" multiple accept="image/*">
+      </div>
+
+      <button class="btn primary" type="submit">发布</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

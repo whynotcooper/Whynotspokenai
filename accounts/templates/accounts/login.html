@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>英语口语网站 - 用户登录</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%); min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
+        .container { display: flex; max-width: 1000px; width: 100%; background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2); }
+        .left-section { flex: 1; background: linear-gradient(rgba(106, 17, 203, 0.85), rgba(37, 117, 252, 0.85)), url('https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=1350&q=80'); background-size: cover; background-position: center; color: white; padding: 40px; display: flex; flex-direction: column; justify-content: center; position: relative; }
+        .left-section::after { content: ""; position: absolute; inset: 20px; border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 20px; pointer-events: none; }
+        .left-section h1 { font-size: 2.4rem; margin-bottom: 15px; }
+        .left-section h1 span { display: inline-block; padding: 2px 8px; border-radius: 999px; background: rgba(255, 255, 255, 0.18); font-size: 0.9rem; margin-left: 8px; vertical-align: middle; }
+        .left-section p { font-size: 1rem; line-height: 1.7; margin-top: 10px; }
+        .left-highlights { margin-top: 25px; }
+        .left-badge { display: inline-flex; align-items: center; padding: 6px 12px; border-radius: 999px; background: rgba(255, 255, 255, 0.14); font-size: 0.85rem; margin-bottom: 10px; }
+        .left-badge-dot { width: 7px; height: 7px; border-radius: 50%; background-color: #00ffb2; margin-right: 8px; }
+        .left-stats { display: flex; gap: 25px; margin-top: 15px; }
+        .left-stat-item { display: flex; flex-direction: column; }
+        .left-stat-item span:first-child { font-size: 1.3rem; font-weight: 700; }
+        .left-stat-item span:last-child { font-size: 0.85rem; opacity: 0.85; }
+        .right-section { flex: 1; padding: 40px; }
+        .logo { text-align: center; margin-bottom: 25px; }
+        .logo h2 { color: #2575fc; font-size: 2rem; }
+        .logo p { color: #666; margin-top: 5px; font-size: 0.95rem; }
+        .tagline { text-align: center; font-size: 0.9rem; color: #999; margin-bottom: 20px; }
+        .tagline span { color: #2575fc; font-weight: 600; }
+        .messages { margin-bottom: 12px; }
+        .messages .msg { padding: 8px 10px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 6px; }
+        .messages .error { background: #fdecea; color: #e74c3c; border: 1px solid #f5c2c0; }
+        .form-group { margin-bottom: 18px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 500; color: #333; }
+        .form-control { width: 100%; padding: 12px 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; transition: all 0.3s; }
+        .form-control:focus { border-color: #2575fc; box-shadow: 0 0 0 2px rgba(37, 117, 252, 0.2); outline: none; }
+        .error-message { color: #e74c3c; font-size: 13px; margin-top: 5px; display: none; }
+        .form-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; font-size: 0.9rem; }
+        .remember-me { display: flex; align-items: center; gap: 6px; color: #555; }
+        .remember-me input { accent-color: #2575fc; }
+        .forgot-link a { color: #2575fc; text-decoration: none; }
+        .forgot-link a:hover { text-decoration: underline; }
+        .btn { display: block; width: 100%; padding: 13px; background: linear-gradient(to right, #6a11cb, #2575fc); color: white; border: none; border-radius: 999px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s; margin-top: 5px; }
+        .btn:hover { transform: translateY(-1.5px); box-shadow: 0 6px 18px rgba(37, 117, 252, 0.4); }
+        .btn:active { transform: translateY(0); box-shadow: none; }
+        .divider { display: flex; align-items: center; margin: 20px 0; color: #aaa; font-size: 0.85rem; }
+        .divider::before, .divider::after { content: ""; flex: 1; height: 1px; background: #eee; }
+        .divider span { margin: 0 10px; }
+        .social-login { display: flex; gap: 10px; }
+        .social-btn { flex: 1; border-radius: 999px; border: 1px solid #e0e0e0; padding: 9px 10px; font-size: 0.9rem; color: #555; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; background: #fafafa; transition: all 0.3s; }
+        .social-btn:hover { background: #f2f2f2; transform: translateY(-1px); }
+        .social-icon { width: 16px; height: 16px; border-radius: 4px; border: 1px solid #ccc; }
+        .register-link { text-align: center; margin-top: 18px; color: #666; font-size: 0.9rem; }
+        .register-link a { color: #2575fc; text-decoration: none; font-weight: 500; }
+        .register-link a:hover { text-decoration: underline; }
+        @media (max-width: 768px) {
+            .container { flex-direction: column; }
+            .left-section { padding: 28px 22px; min-height: 220px; }
+            .right-section { padding: 30px 22px 25px; }
+            .left-section::after { inset: 15px; }
+            .left-section h1 { font-size: 2rem; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="left-section">
+        <h1>欢迎回来 <span>SpeakEasy</span></h1>
+        <p>继续你的英语口语旅程，让“开口说”变成一种习惯。每天 15 分钟，陪你从羞于开口到自信表达。</p>
+
+        <div class="left-highlights">
+            <div class="left-badge">
+                <div class="left-badge-dot"></div>
+                实时语音互动 · 智能口语打分
+            </div>
+            <div class="left-stats">
+                <div class="left-stat-item">
+                    <span>120K+</span>
+                    <span>全球学习者</span>
+                </div>
+                <div class="left-stat-item">
+                    <span>95%</span>
+                    <span>坚持30天后敢开口</span>
+                </div>
+                <div class="left-stat-item">
+                    <span>24/7</span>
+                    <span>随时随地练口语</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="right-section">
+        <div class="logo">
+            <h2>SpeakEasy</h2>
+            <p>登录您的账户</p>
+        </div>
+
+        <div class="tagline">
+            一起 <span>开口说</span>，让英语变成你的第二语言。
+        </div>
+
+        {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+            <div class="msg error">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- ✅ 改：POST 到 accounts:login -->
+        <form id="loginForm" method="post" action="{% url 'accounts:login' %}">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ next }}">
+
+            <div class="form-group">
+                <label for="loginId">用户名 / 手机号</label>
+                <input
+                    type="text"
+                    id="loginId"
+                    name="username"
+                    class="form-control"
+                    placeholder="请输入用户名或手机号"
+                    required
+                    value="{{ username|default:'' }}"
+                >
+                <div class="error-message" id="loginIdError">请输入有效的用户名或手机号</div>
+            </div>
+
+            <div class="form-group">
+                <label for="loginPassword">密码</label>
+                <input
+                    type="password"
+                    id="loginPassword"
+                    name="password"
+                    class="form-control"
+                    placeholder="请输入密码"
+                    required
+                >
+                <div class="error-message" id="loginPasswordError">密码不能为空</div>
+            </div>
+
+            <div class="form-row">
+                <label class="remember-me">
+                    <input type="checkbox" id="rememberMe">
+                    <span>记住我</span>
+                </label>
+                <div class="forgot-link">
+                    <!-- ✅ 改 -->
+                    <a href="{% url 'accounts:password_reset' %}">忘记密码？</a>
+                </div>
+            </div>
+
+            <button type="submit" class="btn">登录</button>
+
+            <div class="divider">
+                <span>或使用以下方式快速登录</span>
+            </div>
+
+            <div class="social-login">
+                <button type="button" class="social-btn">
+                    <span class="social-icon"></span>
+                    微信登录
+                </button>
+                <button type="button" class="social-btn">
+                    <span class="social-icon"></span>
+                    QQ登录
+                </button>
+            </div>
+        </form>
+
+        <div class="register-link">
+            <!-- ✅ 改：并带 next -->
+            还没有账号？<a href="{% url 'accounts:register' %}?next={{ next|urlencode }}">立即注册</a>
+        </div>
+    </div>
+</div>
+
+<script>
+    const loginForm = document.getElementById('loginForm');
+    const loginIdInput = document.getElementById('loginId');
+    const loginPasswordInput = document.getElementById('loginPassword');
+    const loginIdError = document.getElementById('loginIdError');
+    const loginPasswordError = document.getElementById('loginPasswordError');
+
+    const phoneRegex = /^1[3-9]\d{9}$/;
+
+    loginForm.addEventListener('submit', function (e) {
+        let isValid = true;
+        const loginId = loginIdInput.value.trim();
+        const password = loginPasswordInput.value;
+
+        if (loginId === '') {
+            loginIdError.textContent = '请输入用户名或手机号';
+            loginIdError.style.display = 'block';
+            isValid = false;
+        } else if (!phoneRegex.test(loginId) && loginId.length < 3) {
+            loginIdError.textContent = '请输入有效的用户名或手机号';
+            loginIdError.style.display = 'block';
+            isValid = false;
+        } else {
+            loginIdError.style.display = 'none';
+        }
+
+        if (password === '') {
+            loginPasswordError.textContent = '密码不能为空';
+            loginPasswordError.style.display = 'block';
+            isValid = false;
+        } else {
+            loginPasswordError.style.display = 'none';
+        }
+
+        if (!isValid) {
+            e.preventDefault();
+        }
+    });
+
+    loginIdInput.addEventListener('input', function () {
+        if (this.value.trim() !== '') {
+            loginIdError.style.display = 'none';
+        }
+    });
+
+    loginPasswordInput.addEventListener('input', function () {
+        if (this.value.trim() !== '') {
+            loginPasswordError.style.display = 'none';
+        }
+    });
+</script>
+</body>
+</html>

@@ -16,7 +16,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 import io
 from django.shortcuts import render, get_object_or_404
 from .models import Task1Model
-from .models import Task2Model
+from .models import Task2Model, Task3Model, Task4Model
 from django.views.decorators.http import require_http_methods
 
 UPLOAD_DIR = os.path.join(settings.MEDIA_ROOT, 'audio')
@@ -275,6 +275,12 @@ from django.contrib import messages
 from django.db.models import Q
 from .models import UserInfoModel
 
+from django.shortcuts import render, redirect
+from django.views.decorators.http import require_http_methods
+from django.contrib import messages
+from django.db.models import Q
+from django.utils.http import url_has_allowed_host_and_scheme
+
 @require_http_methods(["GET", "POST"])
 def login_view(request):
     """
@@ -282,44 +288,38 @@ def login_view(request):
     - GET  请求：渲染 login.html
     - POST 请求：用 UserInfoModel 校验用户名/手机号 + 密码
     """
+    # 统一拿 next：POST 优先，其次 GET
+    next_url = (request.POST.get("next") or request.GET.get("next") or "").strip()
+
     if request.method == "GET":
-        next_url = request.GET.get("next", "")
         return render(request, "login.html", {"next": next_url})
 
     # POST：提交登录
-    login_id = request.POST.get("username", "").strip()  # 可以是用户名或手机号
+    login_id = request.POST.get("username", "").strip()
     password = request.POST.get("password", "")
 
     if not (login_id and password):
         messages.error(request, "用户名/手机号 和 密码不能为空。")
-        next_url = request.POST.get("next", "")
         return render(request, "login.html", {"next": next_url, "username": login_id})
 
-    # 用你自己的 UserInfoModel 来查：
-    # 支持：用户名 OR 手机号 + 明文密码
     user = UserInfoModel.objects.filter(
         Q(username=login_id) | Q(phone=login_id),
         password=password
     ).first()
 
     if user:
-        # 登录成功：自己往 session 里塞
         request.session['login_in'] = True
         request.session['username'] = user.username
         request.session['user_id'] = user.id
 
-        # 处理 next 跳转
-        next_url = request.POST.get("next") or request.GET.get("next")
-        if next_url:
+        # ✅ 安全校验 next，防止跳转到外站
+        if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
             return redirect(next_url)
 
-        # 没有 next 就跳首页（根据你的 urls 改）
         return redirect("spoken_ai:index")
-    else:
-        # 登录失败
-        messages.error(request, "用户名或密码不正确，请重试。")
-        next_url = request.POST.get("next", "")
-        return render(request, "login.html", {"next": next_url, "username": login_id})
+
+    messages.error(request, "用户名或密码不正确，请重试。")
+    return render(request, "login.html", {"next": next_url, "username": login_id})
 
 from django.contrib.auth.forms import PasswordResetForm
 
@@ -369,6 +369,14 @@ def task1_list(request):
 def task2_list(request):
     tasks = Task2Model.objects.all().order_by('name')
     return render(request, 'toefl_task2.html', {'tasks': tasks})
+def task3_list(request):
+    tasks = Task3Model.objects.all().order_by('name')
+    return render(request, 'toefl_task3.html', {'tasks': tasks})
+def task4_list(request):
+    tasks = Task4Model.objects.all().order_by('name')
+    return render(request, 'toefl_task4.html', {'tasks': tasks})
+
+
 
 def show_task1(request, task_id):
     task = Task1Model.objects.get(id=task_id)
@@ -376,7 +384,15 @@ def show_task1(request, task_id):
 def show_task2(request, task_id):
     task = Task2Model.objects.get(id=task_id)
     return render(request, 'show_task2.html', {'task': task})
+def show_task3(request, task_id):
+    task = Task3Model.objects.get(id=task_id)
+    return render(request, 'show_task3.html', {'task': task})
+def show_task4(request, task_id):
+    task = Task4Model.objects.get(id=task_id)
+    return render(request, 'show_task4.html', {'task': task})
+
 # views.py
+
 
 @csrf_exempt
 @require_http_methods(["POST"])
@@ -408,7 +424,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 import json
-from .utils import generate_pdf_report  # 你需要实现这个函数
+from .utils import generate_pdf_report, generate_pdf_report2  # 你需要实现这个函数
 
 @csrf_exempt
 @require_http_methods(["POST"])
@@ -445,6 +461,47 @@ def analyse_task1(request, task_id):
     except Exception as e:
         import traceback
         print(f"[ERROR] Analysis failed: {e}\n{traceback.format_exc()}")
+        return JsonResponse({'error': str(e)}, status=500)
+@csrf_exempt
+@require_http_methods(["POST"])
+def analyse_task2(request, task_id):
+    """
+    接收用户的 Task2 回答文本，进行 AI 分析并生成 PDF。
+    """
+    # 获取对应的 Task2 题目
+    task = get_object_or_404(Task2Model, id=task_id)
+
+    try:
+        data = json.loads(request.body)
+        student_answer = data.get('student_answer', '').strip()
+        if not student_answer:
+            return JsonResponse({'error': 'Empty answer'}, status=400)
+
+        # === 调用 AI 分析（Task2 专用） ===
+        feedback = analysis_task_pipeline.analyze_task2(
+            reading_passage=task.readingtext or "No reading passage provided.",
+            listening_passage=task.listeningtext or "No listening passage provided.",
+            question=task.questiontext or "No prompt provided.",
+            student_answer=student_answer
+        )
+
+        # === 生成 PDF 报告 ===
+        # 如果 generate_pdf_report 已经支持 Task1，用法基本可以复用
+        pdf_url = generate_pdf_report(
+            task=task,
+            student_answer=student_answer,
+            feedback=feedback
+        )
+
+        return JsonResponse({
+            'success': True,
+            'feedback': feedback,
+            'pdf_url': pdf_url
+        })
+
+    except Exception as e:
+        import traceback
+        print(f"[ERROR] Task2 Analysis failed: {e}\n{traceback.format_exc()}")
         return JsonResponse({'error': str(e)}, status=500)
 def solve_followup(request):
     """
@@ -516,6 +573,84 @@ def solve_followup(request):
             "reply": reply_text,
         }
     )
+@csrf_exempt
+@require_http_methods(["POST"])
+def analyse_task3(request, task_id):
+    """
+    接收用户的 Task3 回答文本，进行 AI 分析并生成 PDF。（Integrated – Academic）
+    """
+    # 获取对应的 Task3 题目
+    task = get_object_or_404(Task3Model, id=task_id)
+
+    try:
+        data = json.loads(request.body)
+        student_answer = data.get('student_answer', '').strip()
+        if not student_answer:
+            return JsonResponse({'error': 'Empty answer'}, status=400)
+
+        # === 调用 AI 分析（Task3 专用） ===
+        feedback = analysis_task_pipeline.analyze_task3(
+            reading_passage=task.readingtext or "No reading passage provided.",
+            listening_passage=task.listeningtext or "No listening passage provided.",
+            question=task.questiontext or "No prompt provided.",
+            student_answer=student_answer
+        )
+
+        # === 生成 PDF 报告 ===
+        pdf_url = generate_pdf_report(
+            task=task,
+            student_answer=student_answer,
+            feedback=feedback
+        )
+
+        return JsonResponse({
+            'success': True,
+            'feedback': feedback,
+            'pdf_url': pdf_url
+        })
+
+    except Exception as e:
+        import traceback
+        print(f"[ERROR] Task3 Analysis failed: {e}\n{traceback.format_exc()}")
+        return JsonResponse({'error': str(e)}, status=500)
+def analyse_task4(request, task_id):
+    """
+    接收用户的 Task4 回答文本，进行 AI 分析并生成 PDF。（Integrated – Academic Lecture Only）
+    """
+    # 获取对应的 Task4 题目
+    task = get_object_or_404(Task4Model, id=task_id)
+
+    try:
+        data = json.loads(request.body)
+        student_answer = data.get('student_answer', '').strip()
+        if not student_answer:
+            return JsonResponse({'error': 'Empty answer'}, status=400)
+
+        # === 调用 AI 分析（Task4 专用，无阅读文本） ===
+        feedback = analysis_task_pipeline.analyze_task4(
+            listening_passage=task.listeningtext or "No listening passage provided.",
+            question=task.questiontext or "No prompt provided.",
+            student_answer=student_answer
+        )
+
+        # === 生成 PDF 报告 ===
+        pdf_url = generate_pdf_report2(
+            task=task,
+            student_answer=student_answer,
+            feedback=feedback
+        )
+
+        return JsonResponse({
+            'success': True,
+            'feedback': feedback,
+            'pdf_url': pdf_url
+        })
+
+    except Exception as e:
+        import traceback
+        print(f"[ERROR] Task4 Analysis failed: {e}\n{traceback.format_exc()}")
+        return JsonResponse({'error': str(e)}, status=500)
+
 def followup(request):
     """
     通用追问页面：
