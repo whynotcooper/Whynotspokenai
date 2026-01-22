@@ -1,174 +1,340 @@
 {% extends "base.html" %}
 
 {% block title %}{{ profile_user.username }} · Profile{% endblock %}
-{% block header_title %}用户档案{% endblock %}
+{% block header_title %}我的主页{% endblock %}
 
 {% block page_style %}
-  .wrap{width:100%; max-width:1100px; padding: 0 24px 48px;}
-  .profile-card{
-    margin: 10px auto 18px;
-    padding: 18px;
-    border-radius: 18px;
-    background: var(--card-bg);
-    backdrop-filter: blur(var(--blur));
-    box-shadow: var(--shadow);
-    display:flex;
-    gap:16px;
-    align-items:center;
-  }
-  .avatar{
-    width:72px; height:72px; border-radius:50%;
-    background: linear-gradient(135deg,#6750a4,#9f7aea);
-    overflow:hidden; flex:0 0 auto;
-    display:flex; align-items:center; justify-content:center;
-    color:#fff; font-size:26px; font-weight:700;
-  }
-  .avatar img{width:100%; height:100%; object-fit:cover; display:block;}
-  .p-info{flex:1;}
-  .p-name{font-size:20px; font-weight:700; margin-bottom:4px;}
-  .p-bio{opacity:.85; font-size:14px;}
-  .actions{display:flex; gap:10px; flex-wrap:wrap;}
-  .btn{
-    padding:10px 14px; border-radius:999px; text-decoration:none;
-    background: var(--card-bg); color: var(--text);
-    border:1px solid rgba(103,80,164,.25);
-    box-shadow: var(--shadow);
-    cursor:pointer;
-  }
-  .btn.primary{background:linear-gradient(135deg,#6750a4,#9f7aea); color:#fff; border:none;}
-  .btn.ghost{background:rgba(255,255,255,.25); border:1px solid rgba(103,80,164,.14);}
+/* ===== 页面整体 ===== */
+.wrap{
+  width:100%;
+  max-width:1100px;
+  margin:0 auto;
+  padding:16px 20px 48px;
+}
 
-  /* 小红书瀑布流 */
-  .masonry{column-count: 3; column-gap: 16px; margin-top: 16px;}
-  @media(max-width: 980px){ .masonry{column-count:2;} }
-  @media(max-width: 620px){ .masonry{column-count:1;} }
+/* ===== 个人信息卡 ===== */
+.profile-card{
+  display:flex;
+  align-items:center;
+  gap:16px;
+  padding:18px;
+  margin-bottom:18px;
+  border-radius:22px;
+  background:color-mix(in srgb, var(--card-bg) 78%, transparent);
+  backdrop-filter:blur(var(--blur));
+  -webkit-backdrop-filter:blur(var(--blur));
+  border:1px solid rgba(255,255,255,.18);
+  box-shadow: 0 12px 40px rgba(0,0,0,.12);
+}
 
-  .card{
-    break-inside: avoid;
-    margin: 0 0 16px;
-    border-radius: 18px;
-    background: var(--card-bg);
-    backdrop-filter: blur(var(--blur));
-    box-shadow: var(--shadow);
-    overflow:hidden;
-  }
-  .cover{width:100%; display:block; aspect-ratio: 4/5; object-fit:cover; background: rgba(103,80,164,.15);}
-  .card-body{padding: 12px 12px 14px;}
-  .card-title{font-weight:700; margin-bottom:6px;}
-  .card-text{font-size:13px; opacity:.85; line-height:1.45; white-space:pre-wrap;}
+.avatar{
+  width:76px;
+  height:76px;
+  border-radius:22px;
+  overflow:hidden;
+  background:linear-gradient(135deg,#6750a4,#9f7aea);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:#fff;
+  font-size:28px;
+  font-weight:800;
+  cursor:pointer;
+}
+.avatar img{width:100%;height:100%;object-fit:cover;}
 
-  /* ✅ 编辑弹窗 */
-  .modal-mask{
-    position:fixed; inset:0; background:rgba(0,0,0,.35);
-    display:none; align-items:center; justify-content:center;
-    z-index:9999; padding:16px;
-  }
-  .modal{
-    width:min(520px, 92vw);
-    background:var(--card-bg);
-    border-radius:18px;
-    box-shadow: var(--shadow);
-    border:1px solid rgba(103,80,164,.15);
-    padding:16px;
-  }
-  .modal-title{font-weight:800; font-size:16px; margin-bottom:12px;}
-  .form-row{margin:10px 0;}
-  .label{font-size:13px; opacity:.85; margin-bottom:6px;}
-  .input, textarea{
-    width:100%;
-    border:none;
-    border-radius:14px;
-    padding:12px;
-    background:rgba(255,255,255,.35);
-    color: var(--text);
-    outline:none;
-    box-sizing:border-box;
-  }
-  textarea{resize:vertical; min-height:92px;}
-  .modal-actions{display:flex; justify-content:flex-end; gap:10px; margin-top:14px;}
+.profile-main{flex:1;min-width:0;}
+.profile-name{font-size:20px;font-weight:900;letter-spacing:-0.02em;margin-bottom:6px;}
+.profile-bio{font-size:13px;opacity:.78;line-height:1.55;}
 
-  .avatar-edit{
-    display:flex; gap:12px; align-items:center;
-  }
-  .avatar-preview{
-    width:64px; height:64px; border-radius:999px;
-    overflow:hidden; border:1px solid rgba(103,80,164,.18);
-    background:rgba(103,80,164,.12);
-    flex:0 0 auto;
-    cursor:pointer;            /* ✅ 可点击 */
-  }
-  .avatar-preview img{width:100%; height:100%; object-fit:cover; display:block;}
-  .help{font-size:12px; opacity:.7; margin-top:6px;}
+.profile-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;}
+.btn{
+  padding:10px 14px;
+  border-radius:999px;
+  font-size:14px;
+  cursor:pointer;
+  text-decoration:none;
+  background:rgba(255,255,255,.14);
+  color:var(--text);
+  border:1px solid rgba(255,255,255,.18);
+  font-weight:800;
+  transition:.16s ease;
+}
+.btn.primary{
+  background:linear-gradient(135deg,#6750a4,#9f7aea);
+  color:#fff;
+  border:none;
+}
+.btn:hover{transform:translateY(-1px);}
+
+/* ===== 瀑布流（作品墙） ===== */
+.masonry{column-count:3;column-gap:16px;}
+@media(max-width:980px){.masonry{column-count:2;}}
+@media(max-width:620px){.masonry{column-count:1;}}
+
+.post-card{
+  break-inside:avoid;
+  margin-bottom:16px;
+  border-radius:18px;
+  overflow:hidden;
+  background:rgba(255,255,255,.10);
+  border:1px solid rgba(255,255,255,.14);
+  box-shadow: 0 10px 34px rgba(0,0,0,.10);
+  position:relative;
+  transition:.14s ease;
+}
+.post-card:hover{transform:translateY(-2px);box-shadow:0 18px 44px rgba(0,0,0,.14);}
+
+/* ✅ 卡片可点击区域（覆盖图片区域），用于跳转详情 */
+.post-link{
+  display:block;
+  color:inherit;
+  text-decoration:none;
+}
+
+/* 只展示图片 + 主题（更克制、更苹果） */
+.post-body{
+  padding:12px 14px 14px;
+}
+.post-title{
+  font-weight:900;
+  letter-spacing:-0.01em;
+  font-size:14px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  opacity:.92;
+}
+
+/* ===== 删除按钮（右上角） ===== */
+.post-topbar{
+  position:absolute;
+  top:10px;
+  right:10px;
+  z-index:8;
+}
+.icon-btn{
+  width:34px;height:34px;border-radius:999px;border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.32);
+  color:#fff;
+  backdrop-filter:blur(8px);
+}
+.icon-btn:hover{ background:rgba(0,0,0,.42); }
+.icon-btn:active{ transform:scale(.98); }
+
+/* ===== 多图轮播（仍保留） ===== */
+.carousel{
+  position:relative;
+  width:100%;
+  overflow:hidden;
+  background:rgba(103,80,164,.06);
+}
+.carousel-track{
+  display:flex;
+  width:100%;
+  transition:transform .25s ease;
+  will-change:transform;
+}
+.carousel-slide{min-width:100%;}
+.post-cover{
+  width:100%;
+  aspect-ratio:4/5;
+  object-fit:cover;
+  background:rgba(103,80,164,.12);
+  display:block;
+}
+
+/* 轮播按钮 */
+.car-btn{
+  position:absolute;
+  top:50%;
+  transform:translateY(-50%);
+  width:34px;height:34px;border-radius:999px;border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.32);
+  color:#fff;
+  backdrop-filter:blur(8px);
+  z-index:7;
+}
+.car-btn:hover{background:rgba(0,0,0,.42);}
+.car-btn.prev{left:10px;}
+.car-btn.next{right:10px;}
+
+.car-dots{
+  position:absolute;left:0;right:0;bottom:10px;
+  display:flex;justify-content:center;gap:6px;
+  padding:0 10px;
+  z-index:7;
+}
+.car-dot{
+  width:7px;height:7px;border-radius:999px;border:none;cursor:pointer;
+  background:rgba(255,255,255,.42);
+}
+.car-dot.is-active{background:#fff;transform:scale(1.15);}
+
+/* ===== 编辑资料弹窗（原样保留） ===== */
+.modal-mask{
+  position:fixed;
+  inset:0;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  background:rgba(0,0,0,.4);
+  z-index:9999;
+  padding:16px;
+}
+.modal{
+  width:min(520px,92vw);
+  background:var(--card-bg);
+  border-radius:20px;
+  padding:18px;
+  box-shadow:var(--shadow);
+}
+.modal-title{font-size:16px;font-weight:900;margin-bottom:14px;}
+.form-row{margin-bottom:14px;}
+.label{font-size:13px; opacity:.8; margin-bottom:6px;}
+.input, textarea{
+  width:100%;
+  padding:12px;
+  border-radius:14px;
+  border:none;
+  outline:none;
+  background:rgba(255,255,255,.35);
+  color:var(--text);
+}
+textarea{resize:vertical; min-height:90px;}
+.modal-actions{display:flex;justify-content:flex-end;gap:10px;}
+.avatar-edit{display:flex;gap:12px;align-items:center;}
+.avatar-preview{
+  width:64px;height:64px;border-radius:18px;overflow:hidden;
+  background:rgba(103,80,164,.15);
+  cursor:pointer;
+}
+.avatar-preview img{width:100%; height:100%; object-fit:cover;}
+.help{font-size:12px; opacity:.65; margin-top:6px;}
 {% endblock %}
 
 {% block content %}
 <div class="wrap">
 
+  <!-- 个人信息 -->
   <div class="profile-card">
-    <!-- ✅ 可选：点顶部头像也打开编辑弹窗 -->
     <div class="avatar" id="topAvatar">
-      {% if profile_user.avatar %}
+      {# ✅ 关键修复：只有在 avatar 有文件名时才取 url #}
+      {% if profile_user.avatar and profile_user.avatar.name %}
         <img src="{{ profile_user.avatar.url }}" alt="avatar">
       {% else %}
         {{ profile_user.username|first|default:"U" }}
       {% endif %}
     </div>
 
-    <div class="p-info">
-      <div class="p-name">
+    <div class="profile-main">
+      <div class="profile-name">
         {{ profile_ext.nickname|default:profile_user.username }}
       </div>
-      <div class="p-bio">
-        {{ profile_ext.bio|default:"这个人很懒，还没有写签名～" }}
+      <div class="profile-bio">
+        {{ profile_ext.bio|default:"记录一些生活碎片。" }}
       </div>
     </div>
 
     {% if is_owner %}
-      <div class="actions">
-        <a class="btn primary" href="{% url 'social:post_create' %}">发布图文</a>
-        <button class="btn" id="editBtn" type="button">编辑资料</button>
-      </div>
+    <div class="profile-actions">
+      <a href="{% url 'social:post_create' %}" class="btn primary">发布</a>
+      <button type="button" class="btn" id="editBtn">编辑</button>
+    </div>
     {% endif %}
   </div>
 
+  <!-- 作品墙：只显示图片 + 主题，支持轮播；点击跳详情 -->
   <div class="masonry">
     {% for post in posts %}
-      {% include "social/_post_card.html" with post=post %}
+      <div class="post-card">
+
+        {% if is_owner %}
+          <div class="post-topbar">
+            <form method="post"
+                  action="{% url 'social:post_delete' post.id %}"
+                  onsubmit="return confirm('确定要删除这条投稿吗？删除后不可恢复。');">
+              {% csrf_token %}
+              <button type="submit" class="icon-btn" aria-label="删除">🗑</button>
+            </form>
+          </div>
+        {% endif %}
+
+        <a class="post-link" href="{% url 'social:post_detail' post.id %}">
+          {% with post.images.all as imgs %}
+            {% if imgs %}
+              <div class="carousel" data-carousel>
+                <div class="carousel-track" data-track>
+                  {% for img in imgs %}
+                    <div class="carousel-slide">
+                      <img src="{{ img.image.url }}" class="post-cover" alt="">
+                    </div>
+                  {% endfor %}
+                </div>
+
+                {% if imgs|length > 1 %}
+                  <!-- 这些按钮必须阻止链接跳转（JS里做 stopPropagation + preventDefault） -->
+                  <button type="button" class="car-btn prev" data-prev aria-label="Previous">‹</button>
+                  <button type="button" class="car-btn next" data-next aria-label="Next">›</button>
+
+                  <div class="car-dots" data-dots>
+                    {% for img in imgs %}
+                      <button type="button"
+                              class="car-dot {% if forloop.first %}is-active{% endif %}"
+                              data-dot
+                              data-index="{{ forloop.counter0 }}"
+                              aria-label="Go to {{ forloop.counter }}">
+                      </button>
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+            {% else %}
+              <div class="post-cover" style="display:flex;align-items:center;justify-content:center;opacity:.7;">
+                No Image
+              </div>
+            {% endif %}
+          {% endwith %}
+
+          <div class="post-body">
+            <div class="post-title">{{ post.title|default:"未命名" }}</div>
+          </div>
+        </a>
+
+      </div>
     {% empty %}
-      <div style="opacity:.8;">还没有发布任何帖子～</div>
+      <div style="opacity:.7;">还没有发布内容</div>
     {% endfor %}
   </div>
 
 </div>
 
 {% if is_owner %}
-<!-- ✅ Edit Modal -->
-<div class="modal-mask" id="editMask" aria-hidden="true">
-  <div class="modal" role="dialog" aria-modal="true">
+<!-- 编辑资料弹窗（原样保留） -->
+<div class="modal-mask" id="editMask">
+  <div class="modal">
     <div class="modal-title">编辑资料</div>
-
-    <form method="POST" enctype="multipart/form-data">
+    <form method="post" enctype="multipart/form-data">
       {% csrf_token %}
 
       <div class="form-row">
-        <div class="label">头像（点击左侧圆圈更换）</div>
+        <div class="label">头像</div>
         <div class="avatar-edit">
-          <div class="avatar-preview" id="avatarPreviewBox" title="点击更换头像">
-            {% if profile_user.avatar %}
-              <img id="avatarPreview" src="{{ profile_user.avatar.url }}" alt="avatar">
+          <div class="avatar-preview" id="avatarPreviewBox">
+            {# ✅ 关键修复：绝对不要在 if 外面写 avatar.url #}
+            {% if profile_user.avatar and profile_user.avatar.name %}
+              <img id="avatarPreview" src="{{ profile_user.avatar.url }}">
             {% else %}
-              <img id="avatarPreview" src="" alt="avatar" style="display:none;">
+              <img id="avatarPreview" style="display:none">
             {% endif %}
           </div>
 
           <div style="flex:1;">
-            <!-- ✅ 隐藏的 file input（点击圆圈触发） -->
             {{ avatar_form.avatar }}
-
-            <!-- ✅ 可选：按钮也能触发选择文件 -->
             <button type="button" class="btn" id="chooseAvatarBtn">选择图片</button>
-
-            <div class="help">支持 JPG/PNG，建议正方形图片。</div>
+            <div class="help">建议正方形 JPG / PNG</div>
           </div>
         </div>
       </div>
@@ -179,13 +345,13 @@
       </div>
 
       <div class="form-row">
-        <div class="label">个性签名</div>
+        <div class="label">签名</div>
         {{ profile_form.bio }}
       </div>
 
       <div class="modal-actions">
-        <button class="btn ghost" id="cancelEdit" type="button">取消</button>
-        <button class="btn primary" type="submit">保存</button>
+        <button type="button" class="btn" id="cancelEdit">取消</button>
+        <button type="submit" class="btn primary">保存</button>
       </div>
     </form>
   </div>
@@ -196,74 +362,113 @@
 {% block extra_js %}
 {% if is_owner %}
 <script>
-  const editBtn = document.getElementById("editBtn");
-  const editMask = document.getElementById("editMask");
-  const cancelEdit = document.getElementById("cancelEdit");
+const editBtn = document.getElementById('editBtn');
+const editMask = document.getElementById('editMask');
+const cancelEdit = document.getElementById('cancelEdit');
+const topAvatar = document.getElementById('topAvatar');
 
-  function openEdit() {
-    editMask.style.display = "flex";
-    editMask.setAttribute("aria-hidden", "false");
-  }
-  function closeEdit() {
-    editMask.style.display = "none";
-    editMask.setAttribute("aria-hidden", "true");
-  }
+function openEdit(){ editMask.style.display='flex'; }
+function closeEdit(){ editMask.style.display='none'; }
 
-  editBtn?.addEventListener("click", openEdit);
-  cancelEdit?.addEventListener("click", closeEdit);
-  editMask?.addEventListener("click", (e) => {
-    if (e.target === editMask) closeEdit();
-  });
+editBtn?.addEventListener('click', openEdit);
+topAvatar?.addEventListener('click', openEdit);   // ✅ 点顶部头像也能打开编辑
+cancelEdit?.addEventListener('click', closeEdit);
+editMask?.addEventListener('click', e => { if(e.target === editMask) closeEdit(); });
 
-  // ✅ 点击头像预览圈/按钮 => 触发文件选择
-  const avatarInput = document.getElementById("avatarInput");
-  const avatarPreview = document.getElementById("avatarPreview");
-  const avatarPreviewBox = document.getElementById("avatarPreviewBox");
-  const chooseAvatarBtn = document.getElementById("chooseAvatarBtn");
+const avatarInput = document.getElementById('avatarInput'); // ✅ 你表单里已指定 id
+const avatarPreview = document.getElementById('avatarPreview');
+const avatarPreviewBox = document.getElementById('avatarPreviewBox');
+const chooseAvatarBtn = document.getElementById('chooseAvatarBtn');
 
-  function triggerChooseAvatar() {
-    if (avatarInput) avatarInput.click();
-  }
+function chooseAvatar(){ avatarInput?.click(); }
+avatarPreviewBox?.addEventListener('click', chooseAvatar);
+chooseAvatarBtn?.addEventListener('click', chooseAvatar);
 
-  avatarPreviewBox?.addEventListener("click", triggerChooseAvatar);
-  chooseAvatarBtn?.addEventListener("click", triggerChooseAvatar);
-
-  // ✅ 选择后立即预览
-  avatarInput?.addEventListener("change", (e) => {
-    const file = e.target.files && e.target.files[0];
-    if (!file) return;
-    const url = URL.createObjectURL(file);
-    avatarPreview.src = url;
-    avatarPreview.style.display = "block";
-  });
-
-  // ✅ 可选：点顶部头像也打开弹窗并选择文件
-  const topAvatar = document.getElementById("topAvatar");
-  topAvatar?.addEventListener("click", () => {
-    openEdit();
-    // 小延迟保证弹窗已显示
-    setTimeout(triggerChooseAvatar, 50);
-  });
+avatarInput?.addEventListener('change', e => {
+  const file = e.target.files && e.target.files[0];
+  if(!file) return;
+  avatarPreview.src = URL.createObjectURL(file);
+  avatarPreview.style.display = 'block';
+});
 </script>
-<script>
-  const avatarInput = document.getElementById("avatarInput");
-  const avatarPreview = document.getElementById("avatarPreview");
-  const avatarPreviewBox = document.querySelector(".avatar-preview");
-
-  // 点击圆圈触发选择文件
-  avatarPreviewBox?.addEventListener("click", () => {
-    avatarInput?.click();
-  });
-
-  // 选择后预览
-  avatarInput?.addEventListener("change", (e) => {
-    const file = e.target.files && e.target.files[0];
-    if (!file) return;
-    const url = URL.createObjectURL(file);
-    avatarPreview.src = url;
-    avatarPreview.style.display = "block";
-  });
-</script>
-
 {% endif %}
+
+<script>
+/**
+ * 轮播 + “在链接里” 的处理：
+ * - 卡片整体是 <a>，点击图片区域会跳详情
+ * - 但点击轮播按钮/圆点时，必须阻止跳转
+ */
+(function(){
+  const carousels = document.querySelectorAll('[data-carousel]');
+  carousels.forEach((root)=>{
+    const track = root.querySelector('[data-track]');
+    if(!track) return;
+
+    const slides = Array.from(track.children);
+    const prevBtn = root.querySelector('[data-prev]');
+    const nextBtn = root.querySelector('[data-next]');
+    const dotsWrap = root.querySelector('[data-dots]');
+    const dots = dotsWrap ? Array.from(dotsWrap.querySelectorAll('[data-dot]')) : [];
+
+    if(slides.length <= 1) return;
+
+    let index = 0;
+
+    function go(i){
+      index = (i + slides.length) % slides.length;
+      track.style.transform = `translateX(${-index * 100}%)`;
+      if(dots.length){
+        dots.forEach(d=>d.classList.remove('is-active'));
+        dots[index]?.classList.add('is-active');
+      }
+    }
+
+    // ✅ 阻止 <a> 跳转（关键）
+    function stopLink(e){
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    prevBtn?.addEventListener('click', (e)=>{ stopLink(e); go(index - 1); });
+    nextBtn?.addEventListener('click', (e)=>{ stopLink(e); go(index + 1); });
+
+    dots.forEach((dot)=>{
+      dot.addEventListener('click', (e)=>{
+        stopLink(e);
+        const i = Number(dot.dataset.index || 0);
+        go(i);
+      });
+    });
+
+    // touch swipe：在滑动时也不要误触跳转
+    let startX = 0, deltaX = 0, dragging = false;
+    root.addEventListener('touchstart', (e)=>{
+      if(!e.touches || e.touches.length !== 1) return;
+      dragging = true;
+      startX = e.touches[0].clientX;
+      deltaX = 0;
+    }, {passive:true});
+
+    root.addEventListener('touchmove', (e)=>{
+      if(!dragging || !e.touches || e.touches.length !== 1) return;
+      deltaX = e.touches[0].clientX - startX;
+    }, {passive:true});
+
+    root.addEventListener('touchend', (e)=>{
+      if(!dragging) return;
+      dragging = false;
+      if(Math.abs(deltaX) > 35){
+        // ✅ 滑动属于轮播操作：阻止链接跳转
+        e.preventDefault?.();
+        e.stopPropagation?.();
+        if(deltaX < 0) go(index + 1);
+        else go(index - 1);
+      }
+    });
+
+    go(0);
+  });
+})();
+</script>
 {% endblock %}

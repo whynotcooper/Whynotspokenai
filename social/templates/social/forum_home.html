@@ -3,54 +3,474 @@
 {% block header_title %}论坛大厅{% endblock %}
 
 {% block page_style %}
-  .wrap{max-width:900px;margin:0 auto;padding:0 24px 40px;}
-  .panel{background:var(--card-bg);backdrop-filter:blur(var(--blur));box-shadow:var(--shadow);border-radius:18px;padding:16px;}
-  .row{display:flex;gap:10px;margin:12px 0;}
-  .panel input{flex:1;border:none;border-radius:14px;padding:12px;background:rgba(255,255,255,.35);color:var(--text);}
-  .btn{padding:10px 14px;border-radius:999px;border:none;cursor:pointer;}
+  :root{
+    --radius-xl: 22px;
+    --radius-lg: 18px;
+    --radius-md: 14px;
+    --stroke: rgba(255,255,255,.18);
+    --stroke2: rgba(255,255,255,.14);
+    --glass: color-mix(in srgb, var(--card-bg) 78%, transparent);
+    --glass2: rgba(255,255,255,.12);
+    --shadow1: 0 12px 40px rgba(0,0,0,.12);
+    --shadow2: 0 10px 34px rgba(0,0,0,.10);
+  }
+
+  .wrap{max-width:1180px;margin:0 auto;padding:16px 24px 56px;}
+
+  /* Top */
+  .topbar{
+    display:flex;align-items:flex-start;justify-content:space-between;gap:14px;
+    margin:6px 0 14px;
+  }
+  .title{
+    font-size:20px;font-weight:900;letter-spacing:-0.02em;line-height:1.15;
+  }
+  .sub{
+    margin-top:6px;font-size:13px;opacity:.72;line-height:1.45;max-width:760px;
+  }
+
+  .top-actions{
+    display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;align-items:center;
+  }
+  .pill{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:8px 10px;border-radius:999px;
+    background:rgba(255,255,255,.14);
+    border:1px solid var(--stroke);
+    font-size:12px;opacity:.92;
+  }
+
+  /* Layout */
+  .grid{
+    display:grid;
+    grid-template-columns: 1.55fr 1fr;
+    gap:14px;
+    align-items:start;
+  }
+  @media (max-width: 980px){
+    .grid{grid-template-columns:1fr;}
+  }
+
+  /* Cards */
+  .card{
+    background:var(--glass);
+    backdrop-filter: blur(var(--blur));
+    -webkit-backdrop-filter: blur(var(--blur));
+    border:1px solid var(--stroke);
+    box-shadow: var(--shadow2);
+    border-radius: var(--radius-xl);
+  }
+  .card-inner{padding:16px;}
+
+  /* Buttons & Inputs */
+  .btn{
+    padding:10px 14px;border-radius:999px;border:none;cursor:pointer;
+    font-weight:850;transition:.16s ease;user-select:none;text-decoration:none;
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  }
   .btn.primary{background:linear-gradient(135deg,#6750a4,#9f7aea);color:#fff;}
-  .rooms{margin-top:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;}
-  .room{display:block;text-decoration:none;color:var(--text);padding:14px;border-radius:16px;background:rgba(255,255,255,.28);border:1px solid rgba(103,80,164,.18);}
-  .meta{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;}
-  .welcome{opacity:.9;font-size:14px;}
+  .btn.ghost{
+    background:rgba(255,255,255,.14);
+    border:1px solid var(--stroke);
+    color:var(--text);
+  }
+  .btn:disabled{
+    opacity:.55;cursor:not-allowed;
+    transform:none !important; box-shadow:none !important;
+  }
+  .btn:hover{transform:translateY(-1px);box-shadow:0 14px 26px rgba(0,0,0,.12);}
+  .btn:active{transform:translateY(0px);box-shadow:none;}
+
+  .input{
+    width:100%;
+    border:none;border-radius:var(--radius-md);
+    padding:12px 12px;
+    background:rgba(255,255,255,.22);
+    color:var(--text);
+    outline:none;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
+    transition:.18s ease;
+  }
+  .input:focus{
+    box-shadow:
+      inset 0 0 0 1px rgba(103,80,164,.35),
+      0 0 0 6px rgba(103,80,164,.16);
+  }
+  textarea.input{resize:none;min-height:46px;line-height:1.45;}
+
+  /* Section header */
+  .sectionHead{
+    display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
+    margin-bottom:10px;
+  }
+  .sectionTitle{font-weight:950;letter-spacing:-0.01em;}
+  .muted{opacity:.72;font-size:13px;line-height:1.45;}
+
+  /* -------- Lobby Chat -------- */
+  .chatWrap{display:flex;flex-direction:column;gap:12px;}
+  .chatHint{
+    padding:10px 12px;border-radius:16px;
+    background:rgba(103,80,164,.12);
+    border:1px solid rgba(103,80,164,.16);
+    font-size:13px;opacity:.92;line-height:1.45;
+  }
+  .chatStream{
+    height:520px;
+    overflow:auto;
+    padding-right:6px;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  @media (max-width:980px){
+    .chatStream{height:420px;}
+  }
+  .msg{
+    display:flex;gap:10px;align-items:flex-start;
+    padding:10px 12px;border-radius:18px;
+    background:var(--glass2);
+    border:1px solid var(--stroke2);
+  }
+  .ava{
+    width:30px;height:30px;border-radius:12px;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(255,255,255,.16);
+    font-size:12px;font-weight:950;opacity:.92;flex:0 0 auto;
+    overflow:hidden;
+  }
+  .ava img{width:100%;height:100%;object-fit:cover;}
+  .mBody{min-width:0;flex:1;}
+  .mTop{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;}
+  .mName{
+    font-weight:950;font-size:13px;
+    color:var(--text);text-decoration:none;
+    max-width:240px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .mName:hover{opacity:.9;text-decoration:underline;}
+  .mTime{opacity:.58;font-size:12px;}
+  .mText{opacity:.92;font-size:14px;line-height:1.5;word-break:break-word;white-space:pre-wrap;}
+
+  .composer{
+    display:flex;gap:10px;align-items:flex-end;
+    margin-top:2px;
+  }
+  .composerActions{display:flex;gap:10px;flex:0 0 auto;}
+  .fineprint{margin-top:6px;font-size:12px;opacity:.65;line-height:1.45;}
+
+  /* -------- Side Panel -------- */
+  .sideStack{display:flex;flex-direction:column;gap:12px;}
+  .tools{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;}
+  .row{display:flex;gap:10px;}
+  .row .input{flex:1;}
+
+  .rooms{display:grid;grid-template-columns:1fr;gap:10px;margin-top:10px;}
+  .room{
+    display:block;text-decoration:none;color:var(--text);
+    padding:12px;border-radius:18px;
+    background:rgba(255,255,255,.10);
+    border:1px solid var(--stroke2);
+    transition:.12s ease;
+  }
+  .room:hover{transform:translateY(-1px);background:rgba(255,255,255,.14);}
+  .roomName{font-weight:950;letter-spacing:-0.01em;}
+  .roomMeta{opacity:.62;font-size:12px;margin-top:4px;display:flex;gap:10px;flex-wrap:wrap;}
+  .badge{
+    display:inline-flex;align-items:center;
+    padding:3px 8px;border-radius:999px;
+    font-size:11px;opacity:.9;
+    background:rgba(103,80,164,.14);
+    border:1px solid rgba(103,80,164,.16);
+  }
+
+  .miniCard{
+    border-radius:var(--radius-xl);
+    background:rgba(255,255,255,.10);
+    border:1px solid var(--stroke2);
+    padding:14px;
+  }
+  .miniHead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px;}
+  .miniTitle{font-weight:950;}
+  .miniSub{font-size:12px;opacity:.68;line-height:1.45;margin-top:2px;}
 {% endblock %}
 
 {% block content %}
 <div class="wrap">
-  <div class="panel">
 
-    <!-- ✅ 当前用户信息（来自 base 传入的 username/login_in） -->
-    <div class="meta">
-      <div style="font-weight:700;">房间列表</div>
-      <div class="welcome">
-        {% if login_in %}
-          欢迎，<b>{{ username }}</b> 👋
-        {% else %}
-          你还未登录（进入房间会提示登录）
-        {% endif %}
+  <div class="topbar">
+    <div>
+      <div class="title">论坛大厅</div>
+      <div class="sub">
+        大厅是“快速交流区”：提问、打卡、找搭子。深入讨论建议进入房间（Q1/Q2/发音等），对话更聚焦。
       </div>
     </div>
 
-    <form method="post">
-      {% csrf_token %}
-      <div class="row">
-        <input name="name" placeholder="创建一个房间（例如：托福口语互助）" maxlength="60" required>
-        <button class="btn primary" type="submit">创建/进入</button>
-      </div>
-    </form>
-
-    <div class="rooms">
-      {% for r in rooms %}
-        <!-- ✅ 进入房间时把用户名带过去（如果已登录） -->
-        <a class="room"
-           href="{% url 'social:chat_room' slug=r.slug %}{% if login_in %}?username={{ username|urlencode }}{% endif %}">
-          <div style="font-weight:700;">{{ r.name }}</div>
-          <div style="opacity:.75;font-size:13px;">{{ r.created_at|date:"Y-m-d H:i" }}</div>
-        </a>
-      {% empty %}
-        <div style="opacity:.8;">还没有房间，先创建一个吧～</div>
-      {% endfor %}
+    <div class="top-actions">
+      {% if login_in %}
+        <span class="pill">Welcome, <b>{{ username }}</b></span>
+        <a class="btn ghost" href="{% url 'social:profile' username=username %}">我的主页</a>
+        <a class="btn primary" href="{% url 'social:post_create' %}">发布内容</a>
+      {% else %}
+        <span class="pill">未登录：发言/进入房间会提示登录</span>
+      {% endif %}
     </div>
   </div>
+
+  <div class="grid">
+
+    <!-- Left: Lobby Chat (Primary) -->
+    <div class="card">
+      <div class="card-inner chatWrap">
+        <div class="sectionHead">
+          <div>
+            <div class="sectionTitle">大厅聊天室</div>
+            <div class="muted">建议发：Q1/Q2 求思路、发音打卡、今日练习收获。高质量内容可以发布成帖子。</div>
+          </div>
+          <div>
+            <button class="btn ghost" type="button" id="scrollBottomBtn">到底部</button>
+          </div>
+        </div>
+
+        <div class="chatHint">
+          小提示：大厅适合短消息；长篇讨论请进入房间，让回答更集中、也更容易被后来的人复习。
+        </div>
+
+        <div class="chatStream" id="chatStream">
+          {% for m in lobby_messages %}
+            <div class="msg" data-mid="{{ m.id }}">
+              <!-- ✅ 改动 1：服务端渲染时，优先显示 author.avatar -->
+              <div class="ava">
+                {% if m.author and m.author.avatar %}
+                  <img src="{{ m.author.avatar.url }}" alt="avatar">
+                {% else %}
+                  {{ m.author_name|default:m.author.username|default:"U"|slice:":1"|upper }}
+                {% endif %}
+              </div>
+
+              <div class="mBody">
+                <div class="mTop">
+                  <a class="mName" href="{% url 'social:profile' username=m.author_name|default:m.author.username %}">
+                    {{ m.author_name|default:m.author.username|default:"匿名" }}
+                  </a>
+                  <div class="mTime">{{ m.created_at|date:"m-d H:i" }}</div>
+                </div>
+                <div class="mText">{{ m.text }}</div>
+              </div>
+            </div>
+          {% empty %}
+            <div class="muted" style="padding:10px 2px;">
+              还没有消息。你可以发第一条：例如“Q2 这题怎么展开？”或“打卡：今天练了 10 分钟发音”。
+            </div>
+          {% endfor %}
+        </div>
+
+        <!-- Lobby composer -->
+        <form method="post" action="{% url 'social:lobby_send' %}" autocomplete="off">
+          {% csrf_token %}
+          <div class="composer">
+            <textarea class="input" name="text" rows="2" maxlength="300"
+                      placeholder="在大厅说点什么…（例如：Q2 求思路 / 发音打卡 / 求搭子）"
+                      {% if not login_in %}disabled{% endif %}></textarea>
+
+            <div class="composerActions">
+              <button class="btn primary" type="submit" {% if not login_in %}disabled{% endif %}>发送</button>
+            </div>
+          </div>
+          <div class="fineprint">
+            {% if not login_in %}
+              登录后可发言。进入房间也会提示登录。
+            {% else %}
+              建议控制在 1–2 句话，更容易得到回复。
+            {% endif %}
+          </div>
+        </form>
+
+      </div>
+    </div>
+
+    <!-- Right: Side Panel -->
+    <div class="sideStack">
+
+      <!-- Quick actions -->
+      <div class="card">
+        <div class="card-inner">
+          <div class="sectionHead">
+            <div>
+              <div class="sectionTitle">快捷入口</div>
+              <div class="muted">保持克制，但路径清晰。</div>
+            </div>
+          </div>
+
+          <div class="tools">
+            {% if login_in %}
+              <a class="btn ghost" href="{% url 'social:profile' username=username %}">我的主页</a>
+              <a class="btn primary" href="{% url 'social:post_create' %}">发布内容</a>
+            {% else %}
+              <span class="pill">你还未登录</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Create / Enter room -->
+      <div class="card">
+        <div class="card-inner">
+          <div class="sectionHead">
+            <div>
+              <div class="sectionTitle">创建 / 进入房间</div>
+              <div class="muted">深入讨论更适合在房间里进行。</div>
+            </div>
+          </div>
+
+          <form method="post" autocomplete="off">
+            {% csrf_token %}
+            <div class="row">
+              <input class="input" name="name" maxlength="60" required
+                     placeholder="例如：Q2 互助 / 发音打卡 / 找搭子">
+              <button class="btn primary" type="submit">创建/进入</button>
+            </div>
+          </form>
+
+          <div style="margin-top:10px;">
+            <input class="input" id="roomSearch" placeholder="搜索房间（前端过滤）" maxlength="60">
+          </div>
+
+          <div class="rooms" id="roomsWrap">
+            {% for r in rooms %}
+              <a class="room"
+                 data-room="{{ r.name|lower }}"
+                 href="{% url 'social:chat_room' r.slug %}{% if login_in %}?username={{ username|urlencode }}{% endif %}">
+                <div class="roomName">{{ r.name }}</div>
+                <div class="roomMeta">
+                  <span class="badge">Room</span>
+                  <span>{{ r.created_at|date:"Y-m-d H:i" }}</span>
+                </div>
+              </a>
+            {% empty %}
+              <div class="muted" style="padding:8px 2px;">还没有房间，先创建一个吧。</div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Minimal guide -->
+      <div class="card">
+        <div class="card-inner">
+          <div class="sectionHead">
+            <div>
+              <div class="sectionTitle">使用建议</div>
+              <div class="muted">让内容更学习向。</div>
+            </div>
+          </div>
+
+          <div class="miniCard">
+            <div class="miniHead">
+              <div class="miniTitle">如何看帖子？</div>
+            </div>
+            <div class="miniSub">大厅/房间点击用户名 → 进入 Ta 的主页 → 点帖子进入详情页。</div>
+          </div>
+
+          <div class="miniCard" style="margin-top:10px;">
+            <div class="miniHead">
+              <div class="miniTitle">大厅发言模板</div>
+            </div>
+            <div class="miniSub">“Q2 我想从 X→Y 展开，是否自然？” / “打卡：今天练了 /θ/ 和 /ð/”</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Room search (frontend filter)
+  (function(){
+    const input = document.getElementById("roomSearch");
+    const wrap = document.getElementById("roomsWrap");
+    if(!input || !wrap) return;
+
+    const items = Array.from(wrap.querySelectorAll(".room"));
+    input.addEventListener("input", ()=>{
+      const q = (input.value || "").trim().toLowerCase();
+      items.forEach(el=>{
+        const name = el.getAttribute("data-room") || "";
+        el.style.display = (!q || name.includes(q)) ? "" : "none";
+      });
+    });
+  })();
+
+  // Scroll to bottom helper
+  (function(){
+    const stream = document.getElementById("chatStream");
+    const btn = document.getElementById("scrollBottomBtn");
+    if(!stream || !btn) return;
+
+    function toBottom(){ stream.scrollTop = stream.scrollHeight; }
+    btn.addEventListener("click", toBottom);
+    setTimeout(toBottom, 80);
+  })();
+
+  // Lobby polling (requires social:lobby_poll)  —— ✅ 改动 2：支持 avatar_url
+  (function(){
+    const stream = document.getElementById("chatStream");
+    if(!stream) return;
+
+    const pollUrl = "{% url 'social:lobby_poll' %}";
+    let lastId = null;
+
+    function getLastId(){
+      const last = stream.querySelector(".msg:last-child");
+      return last ? (last.getAttribute("data-mid") || null) : null;
+    }
+    lastId = getLastId();
+
+    async function poll(){
+      try{
+        const url = lastId ? (pollUrl + "?after=" + encodeURIComponent(lastId)) : pollUrl;
+        const res = await fetch(url, {credentials:"same-origin"});
+        if(!res.ok) return;
+
+        const data = await res.json();
+        const msgs = data.messages || [];
+        if(!msgs.length) return;
+
+        const shouldStick = (stream.scrollHeight - stream.scrollTop - stream.clientHeight) < 80;
+
+        msgs.forEach(m=>{
+          const div = document.createElement("div");
+          div.className = "msg";
+          div.setAttribute("data-mid", m.id || "");
+
+          // ✅ avatar 优先：m.avatar_url，否则首字母
+          const avaHtml = m.avatar_url
+            ? `<img src="${m.avatar_url}" alt="avatar" style="width:100%;height:100%;object-fit:cover;">`
+            : `${(m.username || "U").slice(0,1).toUpperCase()}`;
+
+          div.innerHTML = `
+            <div class="ava">${avaHtml}</div>
+            <div class="mBody">
+              <div class="mTop">
+                <a class="mName" href="${m.profile_url || '#'}">${m.username || "匿名"}</a>
+                <div class="mTime">${m.created_at || ""}</div>
+              </div>
+              <div class="mText"></div>
+            </div>
+          `;
+          div.querySelector(".mText").textContent = m.text || "";
+          stream.appendChild(div);
+          lastId = m.id || lastId;
+        });
+
+        if(shouldStick){
+          stream.scrollTop = stream.scrollHeight;
+        }
+      }catch(e){}
+    }
+
+    setInterval(poll, 2500);
+  })();
+</script>
 {% endblock %}

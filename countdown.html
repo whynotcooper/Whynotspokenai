@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fullscreen Countdown</title>
+  <style>
+    :root{
+      --bg0:#040506; --bg1:#0a0f16; --text:#f4f6f8;
+      --accent: 210 90% 70%; --accent2: 210 90% 60%;
+    }
+    html,body{height:100%;margin:0;overflow:hidden;user-select:none;background:
+      radial-gradient(1200px 800px at 50% 35%, #0f1726 0%, var(--bg1) 45%, var(--bg0) 100%);
+      color:var(--text);
+      font-family:ui-sans-serif,system-ui,-apple-system,"SF Pro Display","Segoe UI","Helvetica Neue",Arial,"PingFang SC","Microsoft YaHei",sans-serif;
+    }
+    body::before{
+      content:""; position:fixed; inset:0; pointer-events:none; opacity:.28; mix-blend-mode:screen;
+      background-image:
+        radial-gradient(circle at 18% 28%, rgba(255,255,255,.06), transparent 55%),
+        radial-gradient(circle at 82% 72%, rgba(255,255,255,.05), transparent 60%),
+        radial-gradient(1200px 800px at 50% 50%, transparent 40%, rgba(0,0,0,.55) 100%),
+        linear-gradient(0deg, rgba(255,255,255,.03), rgba(255,255,255,0));
+    }
+    .wrap{height:100%;display:grid;place-items:center;padding:3vmin;}
+    .num{
+      line-height:1; font-weight:850; letter-spacing:-0.05em; text-align:center;
+      font-size:min(46vw,46vh);
+      font-variant-numeric:tabular-nums lining-nums;
+      font-feature-settings:"tnum" 1, "lnum" 1;
+      text-shadow:
+        0 0 18px rgba(255,255,255,.07),
+        0 0 42px hsla(var(--accent), .20),
+        0 0 80px hsla(var(--accent2), .10);
+      filter: drop-shadow(0 18px 40px rgba(0,0,0,.55));
+      animation:breathe 2.8s ease-in-out infinite;
+      transform-origin:50% 55%;
+    }
+    @keyframes breathe{
+      0%,100%{transform:translateY(0) scale(1);}
+      50%{transform:translateY(-0.8vh) scale(1.012);}
+    }
+    .shake{animation:breathe 2.8s ease-in-out infinite, shake .18s ease-in-out infinite;}
+    @keyframes shake{
+      0%{transform:translate(0,0) scale(1.012);}
+      25%{transform:translate(.35vw,-.25vh) scale(1.012);}
+      50%{transform:translate(-.35vw,.25vh) scale(1.012);}
+      75%{transform:translate(.25vw,.2vh) scale(1.012);}
+      100%{transform:translate(0,0) scale(1.012);}
+    }
+
+    /* ✅ 103–100: red digits */
+    .num.red{
+      color:#ff3b30;
+      text-shadow:
+        0 0 18px rgba(255,59,48,.28),
+        0 0 50px rgba(255,59,48,.22),
+        0 0 90px rgba(255,59,48,.12);
+    }
+
+    /* Everything hidden by default; only appears briefly on interaction */
+    .overlay{
+      position:fixed; inset:0; pointer-events:none;
+      display:flex; justify-content:center; align-items:flex-end;
+      padding:18px;
+      opacity:0; transition:opacity .25s ease;
+    }
+    .overlay.show{opacity:1;}
+    .pill{
+      pointer-events:auto;
+      padding:10px 12px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(0,0,0,.25);
+      backdrop-filter: blur(10px);
+      color:rgba(255,255,255,.75);
+      font-size:12px;
+      letter-spacing:.02em;
+      display:flex;
+      gap:10px;
+      align-items:center;
+    }
+    .btn{
+      cursor:pointer;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(255,255,255,.08);
+      color:rgba(255,255,255,.9);
+      border-radius:999px;
+      padding:6px 10px;
+      font-weight:700;
+    }
+    .doneTag{
+      position:fixed; top:18px; left:50%; transform:translateX(-50%);
+      font-size:12px; letter-spacing:.14em; text-transform:uppercase;
+      color:rgba(255,255,255,.55);
+      opacity:0; transition:opacity .3s ease;
+      pointer-events:none;
+    }
+    .doneTag.show{opacity:1;}
+
+    /* Hide cursor when idle (added via JS class) */
+    .hide-cursor{cursor:none;}
+  </style>
+</head>
+<body>
+  <div class="doneTag" id="doneTag">DONE</div>
+  <div class="wrap">
+    <div id="num" class="num" aria-live="polite">115</div>
+  </div>
+
+  <!-- Hidden overlay; shows only briefly on interaction -->
+  <div class="overlay" id="overlay" aria-hidden="true">
+    <div class="pill">
+      <span id="state">Running</span>
+      <button class="btn" id="fsBtn" type="button">Fullscreen</button>
+      <span style="opacity:.75;">Space Pause · R Reset</span>
+    </div>
+  </div>
+
+  <script>
+    // Countdown: start -> end (inclusive). Stops at end.
+    let start = 115, end = 100, current = start, running = true, timer = null;
+    const numEl = document.getElementById("num");
+    const stateEl = document.getElementById("state");
+    const doneTag = document.getElementById("doneTag");
+    const overlay = document.getElementById("overlay");
+    const fsBtn = document.getElementById("fsBtn");
+
+    let overlayT = null;
+    let cursorT = null;
+
+    function setAccentByRemaining(remaining){
+      // remaining = current - end
+      if (remaining <= 3) { // 103,102,101,100
+        document.documentElement.style.setProperty("--accent",  "8 92% 62%");
+        document.documentElement.style.setProperty("--accent2", "16 92% 58%");
+      } else if (remaining <= 10) {
+        document.documentElement.style.setProperty("--accent",  "35 92% 60%");
+        document.documentElement.style.setProperty("--accent2", "40 92% 56%");
+      } else {
+        document.documentElement.style.setProperty("--accent",  "210 90% 70%");
+        document.documentElement.style.setProperty("--accent2", "210 90% 60%");
+      }
+    }
+
+    function showOverlayBriefly(){
+      overlay.classList.add("show");
+      clearTimeout(overlayT);
+      overlayT = setTimeout(()=>overlay.classList.remove("show"), 1200);
+    }
+
+    function flashOnce(){
+      document.body.animate(
+        [{ filter: "brightness(1)" }, { filter: "brightness(1.35)" }, { filter: "brightness(1)" }],
+        { duration: 520, easing: "ease-out" }
+      );
+    }
+
+    function render(){
+      numEl.textContent = String(current);
+      stateEl.textContent = running ? "Running" : "Paused";
+
+      const remaining = current - end;
+      setAccentByRemaining(remaining);
+
+      // ✅ 103–100: shake + red
+      if (current <= 103 && current >= end) {
+        numEl.classList.add("shake");
+        numEl.classList.add("red");
+      } else {
+        numEl.classList.remove("shake");
+        numEl.classList.remove("red");
+      }
+
+      // Show DONE only when stopped at end
+      if (current === end && timer === null) doneTag.classList.add("show");
+      else doneTag.classList.remove("show");
+    }
+
+    function stop(){ if (timer){ clearInterval(timer); timer = null; } }
+    function startTimer(){ stop(); timer = setInterval(tick, 1000); }
+
+    function tick(){
+      if (!running) return;
+
+      // Already at end -> stop
+      if (current <= end){
+        current = end;
+        stop();
+        render();
+        flashOnce();
+        return;
+      }
+
+      current -= 1;
+
+      // Just reached end -> stop + flash
+      if (current === end){
+        stop();
+        render();
+        flashOnce();
+        return;
+      }
+
+      render();
+    }
+
+    function reset(){
+      current = start;
+      running = true;
+      doneTag.classList.remove("show");
+      render();
+      startTimer();
+      showOverlayBriefly();
+    }
+
+    function toggle(){
+      running = !running;
+      render();
+      showOverlayBriefly();
+    }
+
+    async function toggleFullscreen(){
+      try{
+        if(!document.fullscreenElement) await document.documentElement.requestFullscreen();
+        else await document.exitFullscreen();
+      }catch{}
+    }
+
+    fsBtn.addEventListener("click", async () => {
+      await toggleFullscreen();
+      showOverlayBriefly();
+    });
+
+    // keyboard
+    window.addEventListener("keydown", (e) => {
+      const k = e.key.toLowerCase();
+      if (k === " " || k === "spacebar") { e.preventDefault(); toggle(); }
+      else if (k === "r") { reset(); }
+      else if (k === "f") { toggleFullscreen(); showOverlayBriefly(); }
+    });
+
+    // pointer: click toggles; move shows overlay
+    window.addEventListener("pointerdown", () => toggle());
+    window.addEventListener("pointermove", () => {
+      showOverlayBriefly();
+      document.body.classList.remove("hide-cursor");
+      clearTimeout(cursorT);
+      cursorT = setTimeout(()=>document.body.classList.add("hide-cursor"), 900);
+    });
+
+    render();
+    startTimer();
+    showOverlayBriefly();
+    document.body.classList.add("hide-cursor");
+  </script>
+</body>
+</html>

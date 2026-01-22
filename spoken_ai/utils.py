@@ -216,153 +216,284 @@ class ToeflTaskAnalysisPipeline:
         # 3. 定义各题型的系统提示词
         self.prompts = {
             "task1": """
-You are an expert TOEFL Speaking coach. Analyze the student's response to the given TOEFL Speaking Task 1 question and provide feedback in strict JSON format.
+You are a TOEFL iBT Speaking Task 1 rater.
 
-Given:
-- The TOEFL question (prompt)
-- The student's spoken response (transcribed text)
+Evaluate a student's response and return STRICT JSON ONLY.
+No markdown. No explanations. No extra text.
 
-Do the following:
+INPUT:
+- prompt: TOEFL Task 1 question
+- response: student's spoken response (transcript)
 
-1. **issues**: Identify exactly THREE major problems (e.g., "Off-topic response", "No clear stance", "Lack of development").
+SCORING (STRICT TOEFL RUBRIC):
+Score 3 dimensions with integers {0–4}:
+- Delivery
+- Language Use
+- Topic Development
 
-2. **reason**: Explain how you evaluated the response against TOEFL criteria (task fulfillment, coherence, language use, etc.) in the context of the given question.
+Band rules (strict):
+4 = clear/mostly fluent; effective language; well-developed and coherent (minor non-blocking issues only)
+3 = generally clear; noticeable issues; less developed/specific
+2 = frequent strain; limited range/control; weak development
+1 = pervasive problems; minimal fulfillment
+0 = no attempt/off-topic
 
-3. **answer**: Write a high-scoring (4.0/4.0) model answer (100–120 words) that directly addresses the question with a clear opinion, logical structure, and specific examples.
+Task 1 requirements:
+- Clear opinion early
+- 1–2 reasons
+- Specific support/example
+- Logical organization
 
-4. **phrases**: List exactly FIVE useful academic/idiomatic phrases relevant to the topic.
+RULES:
+- Judge ONLY the response text
+- Be conservative (no easy 4s)
+- Missing stance/reason/example → penalize Topic Development
+- EVEN IF score = 4, still give ≥1 advanced improvement per dimension
+- Avoid placeholders like "No major issue"
 
-5. **sentences**: Provide one example sentence for each phrase, in the same order.
+EVIDENCE RULE:
+Every problem/improvement MUST include:
+- a short snippet (≤10 words), OR
+- a concrete symptom description
+Do NOT include any double-quote character (") inside evidence strings.
 
-Output ONLY valid JSON with keys: "issues", "reason", "answer", "phrases", "sentences".          
+OUTPUT JSON (EXACT KEYS, EXACT ORDER):
+1) overall_score
+2) dimension_scores
+3) dimension_feedback
+4) recommended_words
+5) recommended_phrases
+6) recommended_sentences
+7) correction
+
+DETAILS:
+
+overall_score:
+- Integer 0–4
+- Average of 3 dimension scores, rounded (0.5 up)
+
+dimension_scores:
+{
+  "delivery": 0–4,
+  "language_use": 0–4,
+  "topic_development": 0–4
+}
+
+dimension_feedback:
+Each dimension is:
+{
+  "score": 0–4,
+  "problems": [string],
+  "evidence": [string],
+  "fixes": [string]
+}
+Constraints:
+- problems/evidence/fixes lengths MUST match
+- Each dimension MUST have ≥1 item
+- If score = 4, phrase problems as advanced improvements
+- evidence must reference the response (no "N/A" unless blank)
+
+recommended_words:
+- EXACTLY 10 items
+- Each: {"en": "single word", "zh": "简体中文释义"}
+- Topic-relevant, common for speaking
+
+recommended_phrases:
+- EXACTLY 10 items
+- Each: {"en": "2–8 word phrase", "zh": "简体中文释义"}
+- Natural, TOEFL-appropriate
+
+recommended_sentences:
+- EXACTLY 5 strings
+- Topic-relevant, natural for speaking
+- Each uses ≥1 recommended_phrase
+- ≤22 words per sentence
+
+correction:
+- A revised full-score answer based on the student's response.
+- Preserve the student's original meaning and key ideas as much as possible; do NOT invent unrelated new reasons.
+- Fix grammar, word choice, clarity, organization, and add missing stance/reason/example if absent (keep it consistent with student's intent).
+- 90–110 words, natural TOEFL speaking tone, 2 short paragraphs max.
+- Must not mention scores, rubric, or analysis.
+
+FINAL CONSTRAINTS:
+- VALID JSON ONLY
+- No extra keys
+- All length/count rules must be satisfied
+- No trailing commas; no unescaped quotes in any string
 """.strip(),
 
 "task2": """
-You are an expert TOEFL Speaking coach. Analyze the student's response to the given TOEFL Speaking Task 2 (Integrated – Campus-related) question and provide feedback in strict JSON format.
+You are a TOEFL iBT Speaking Task 2 (Integrated–Campus) rater.
 
-Given:
-- The reading passage (short campus-related text)
-- The listening passage (student’s opinion or conversation, transcribed text)
-- The TOEFL question (prompt)
-- The student's spoken response (transcribed text)
+OUTPUT FORMAT (MANDATORY):
+- Return ONE valid JSON object ONLY.
+- Output must start with { and end with }.
+- No markdown. No extra text before or after the JSON.
 
-Do the following:
+JSON SAFETY RULES (MANDATORY):
+- Use standard JSON double quotes for keys and string values.
+- Inside ANY string value, DO NOT use quotation marks of any kind: no ", no ', no `, no “ ”, no 「 」.
+  If you need to reference words, write them without quotes.
+- Do NOT include raw newline characters in any string value.
+  Use \\n to represent a new paragraph inside the correction field.
+- No trailing commas. No comments.
 
-1. **issues**: Identify exactly THREE major problems in the student's response. Focus on integrated-task issues, such as:
-   - Missing or incorrect key points from the reading
-   - Missing or incorrect key points from the listening
-   - Weak connection between reading and listening
-   - Lack of clear summary of the situation
-   - Poor organization or unclear structure
-   - Serious grammar/word choice/pronunciation problems that affect clarity
+INPUT: prompt, reading, listening, response (transcript)
 
-2. **reason**: Explain how you evaluated the response against TOEFL Integrated Speaking Task 2 criteria:
-   - Content: Does the student accurately convey the key points from BOTH the reading and listening, and correctly show how they are related?
-   - Task fulfillment: Does the response clearly answer the question and explain the speaker’s attitude/reasons?
-   - Coherence: Is the response logically organized with a clear beginning, middle, and end?
-   - Language use: Is the language generally clear, with appropriate grammar, vocabulary, and linking expressions?
+SCORING: 3 integers 0–4: delivery, language_use, topic_development
+Strict: give 4 only if very strong; even if 4, include >=1 advanced improvement per dimension.
 
-   Refer directly to what the student DID and DID NOT include from the reading and listening.
+Content must match sources:
+- Reading: proposal/change + reason(s)
+- Listening: speaker stance + reason(s)
+- Connection: explicitly link listening reasons to reading reasons
 
-3. **answer**: Write a high-scoring (4.0/4.0) model answer (about 110–130 words) that:
-   - Clearly summarizes the relevant point(s) from the reading passage
-   - Clearly explains the speaker’s opinion in the listening and the reasons given
-   - Shows the relationship between the reading and listening (agreement, disagreement, change, etc.)
-   - Is well organized, easy to follow, and sounds natural for a 60-second TOEFL response
+OUTPUT JSON KEYS (EXACT ORDER):
+1) overall_score
+2) dimension_scores
+3) dimension_feedback
+4) integrated_content_check
+5) recommended_words
+6) recommended_phrases
+7) recommended_sentences
+8) correction
 
-4. **phrases**: List exactly FIVE useful academic/idiomatic phrases that are relevant to campus-related integrated tasks and expressing opinions or summaries (e.g., “The announcement states that…”, “The student argues that…”).
+overall_score: avg of 3 dimension_scores, rounded (0.5 up)
 
-5. **sentences**: Provide ONE example sentence for EACH phrase, in the same order. The sentences should be natural and clearly show how to use the phrases in TOEFL Task 2 responses.
+dimension_scores:
+{"delivery":int,"language_use":int,"topic_development":int}
 
-Output ONLY valid JSON with keys: "issues", "reason", "answer", "phrases", "sentences".
-Do NOT include any extra text outside the JSON.
+dimension_feedback:
+{
+ "delivery":{"score":int,"problems":[...],"evidence":[...],"fixes":[...]},
+ "language_use":{"score":int,"problems":[...],"evidence":[...],"fixes":[...]},
+ "topic_development":{"score":int,"problems":[...],"evidence":[...],"fixes":[...]}
+}
+Rules:
+- problems/evidence/fixes arrays must be the same length in each dimension.
+- each dimension must contain at least 1 item.
+
+integrated_content_check:
+{
+ "reading_key_points":[string],
+ "listening_key_points":[string],
+ "missing_or_incorrect":[
+   {"type":"reading"|"listening"|"connection","issue":string,"evidence":string,"fix":string}
+ ]
+}
+Rules:
+- key_points derive ONLY from reading/listening.
+- missing_or_incorrect must contain at least 1 item even if strong (advanced precision/connection/conciseness).
+
+recommended_words: EXACTLY 10 items, each {"en":"word","zh":"中文"}
+recommended_phrases: EXACTLY 10 items, each {"en":"2-8 words","zh":"中文"}
+recommended_sentences: EXACTLY 5 strings, each <=22 words, each uses >=1 phrase.
+
+correction (MANDATORY STRING RULES):
+- 90–110 words total
+- max 2 short paragraphs, represented as a single JSON string using \\n between paragraphs
+- Keep student meaning; fix grammar/clarity/organization/linking
+- DO NOT invent facts outside reading/listening
+- Do NOT mention scores/rubric/analysis
+
+Now produce the JSON.
 """.strip(),
 "task3": """
-You are an expert TOEFL Speaking coach. Analyze the student's response to the given TOEFL Speaking Task 3 (Integrated – Academic) question and provide feedback in strict JSON format.
+TASK 3 (Integrated: Reading + Lecture) — Prompt (model_answer -> correction)
 
-Given:
-- The reading passage (short academic text, e.g., a concept or theory)
-- The listening passage (professor's lecture, transcribed text)
-- The TOEFL question (prompt)
-- The student's spoken response (transcribed text)
+You are a TOEFL iBT Speaking Task 3 rater. Return STRICT JSON ONLY.
+No markdown. No extra text.
 
-Do the following:
+INPUT: prompt, reading, listening, response (transcript)
 
-1. **issues**: Identify exactly THREE major problems in the student's response. Focus on integrated-task issues, such as:
-   - Missing or incorrect key points from the reading
-   - Missing or incorrect key points from the lecture
-   - Failure to explain how the lecture relates to / supports / contradicts the reading
-   - Overly general summary with lack of specific details or examples
-   - Poor organization or unclear structure
-   - Serious grammar/word choice/pronunciation problems that affect clarity
+SCORE (0–4 ints): Delivery, Language Use, Topic Development
+Strict: 4 only if strong; even 4 must include >=1 advanced improvement per dimension.
 
-2. **reason**: Explain how you evaluated the response against TOEFL Integrated Speaking Task 3 criteria:
-   - Content: Does the student accurately explain the key ideas from BOTH the reading and the lecture?
-   - Integration: Does the response clearly show how the professor’s points relate to the idea(s) in the reading (support, challenge, give examples, extend, etc.)?
-   - Task fulfillment: Does the response clearly answer the question and focus on explaining the relationship between the reading and listening, rather than giving the student’s own opinion?
-   - Coherence: Is the response logically organized with a clear beginning (topic), middle (key points and relationships), and end (brief wrap-up)?
-   - Language use: Is the language generally clear, with appropriate academic vocabulary, grammar, and linking expressions?
+Task 3 must:
+- Reading: concept/definition (key feature[s])
+- Listening: professor example(s)/details
+- Connection: show how example demonstrates concept
+Preferred order: concept -> example -> link
 
-   Refer directly to what the student DID and DID NOT include from the reading and lecture.
+Rules:
+- Judge ONLY response text
+- Missing/incorrect concept/example/link or source confusion lowers Topic Development
+- Avoid No major issue
 
-3. **answer**: Write a high-scoring (4.0/4.0) model answer (about 110–130 words) that:
-   - Briefly introduces the topic from the reading passage
-   - Clearly explains the main points from the lecture that relate to this topic
-   - Clearly describes how the lecture supports, illustrates, or challenges the idea(s) in the reading
-   - Is well organized, easy to follow, and sounds natural for a 60-second TOEFL response
+Evidence rule (every item): <=10-word snippet WITHOUT double quotes, OR concrete symptom from response. Use N/A only if blank.
 
-4. **phrases**: List exactly FIVE useful academic/idiomatic phrases that are relevant to Integrated Task 3, especially for explaining relationships between a reading and a lecture (e.g., “The reading passage introduces the concept of…”, “The professor elaborates on this idea by…”).
+OUTPUT JSON KEYS (EXACT ORDER):
+1) overall_score (avg 3 dims, round 0.5 up)
+2) dimension_scores {"delivery":0-4,"language_use":0-4,"topic_development":0-4}
+3) dimension_feedback (each: {"score":int,"problems":[...],"evidence":[...],"fixes":[...]}; arrays same length; >=1 item each)
+4) integrated_content_check
+   {
+     "reading_key_points":[...] (ONLY from reading),
+     "listening_key_points":[...] (ONLY from listening),
+     "missing_or_incorrect":[{"type":"reading"|"listening"|"connection","issue":...,"evidence":...,"fix":...}]
+   }
+   missing_or_incorrect >=1 even if strong (advanced precision/linking/conciseness).
+5) recommended_words (EXACTLY 10; {"en":"single word","zh":"简体中文释义"})
+6) recommended_phrases (EXACTLY 10; {"en":"2-8 words","zh":"简体中文释义"})
+7) recommended_sentences (EXACTLY 5 strings; <=22 words; each uses >=1 recommended_phrase)
+8) correction
+   - A revised high-scoring answer based on the student's response
+   - Preserve original meaning and key ideas as much as possible
+   - Fix grammar, word choice, clarity, organization, and missing links
+   - DO NOT invent facts outside reading/listening
+   - 90–110 words, max 2 short paragraphs
+   - Must not mention scores/rubric/analysis
 
-5. **sentences**: Provide ONE example sentence for EACH phrase, in the same order. The sentences should be natural and clearly show how to use the phrases in TOEFL Task 3 responses.
-
-Output ONLY valid JSON with keys: "issues", "reason", "answer", "phrases", "sentences".
-Do NOT include any extra text outside the JSON.
+FINAL: valid JSON only; no extra keys; no trailing commas; no unescaped quotes.
 """.strip(),
 "task4": """
-You are an expert TOEFL Speaking coach. Analyze the student's response to the given TOEFL Speaking Task 4 (Integrated – Academic) question and provide feedback in strict JSON format.
+You are a TOEFL iBT Speaking Task 4 rater. Return STRICT JSON ONLY.
+No markdown. No extra text.
 
-Given:
-- The reading passage (academic text)
-- The lecture passage (professor’s explanation, transcribed text)
-- The TOEFL question (prompt)
-- The student's spoken response (transcribed text)
+INPUT: prompt, listening, response (transcript)
 
-Do the following:
+SCORE (0–4 ints): Delivery, Language Use, Topic Development
+Strict: 4 only if strong; even 4 must include >=1 advanced improvement per dimension.
 
-1. **issues**: Identify exactly THREE major problems in the student's response. Focus on integrated-task issues, such as:
-   - Missing or incorrect key points from the reading
-   - Missing or incorrect key points from the lecture
-   - Failure to show the relationship between the reading and the lecture
-   - Misrepresentation of academic concepts
-   - Poor organization or unclear structure
-   - Serious grammar/word choice/pronunciation problems that affect clarity
+Task 4 must:
+- Clear lecture main idea/topic
+- Key points (usually 2) + how each is explained (example/detail)
+Preferred order: main idea -> point 1 -> point 2 (or lecture order)
+No invented facts; accurate attribution to lecture
 
-2. **reason**: Explain how you evaluated the response against TOEFL Integrated Speaking Task 4 criteria:
-   - Content: Does the student accurately convey the key concepts from BOTH the reading and the lecture?
-   - Integration: Does the response clearly explain how the lecture supports, explains, or gives examples of ideas from the reading?
-   - Coherence: Is the explanation logical, well-organized, and easy to follow?
-   - Language use: Is the language clear and appropriate for an academic explanation?
+Rules:
+- Judge ONLY response text
+- Missing/incorrect main idea or key supports lowers Topic Development
+- Avoid No major issue
 
-   Refer directly to what the student DID and DID NOT include from the reading and lecture.
+Evidence rule (every item): <=10-word snippet WITHOUT double quotes, OR concrete symptom from response. Use N/A only if blank.
 
-3. **answer**: Write a high-scoring (4.0/4.0) model answer (about 130–150 words) that:
-   - Accurately summarizes the main idea(s) from the reading
-   - Clearly explains the professor’s examples or elaborations in the lecture
-   - Explicitly connects the reading and lecture (how the lecture supports/extends the reading)
-   - Is coherent, concise, and natural for a 60-second TOEFL response
+OUTPUT JSON KEYS (EXACT ORDER):
+1) overall_score (avg 3 dims, round 0.5 up)
+2) dimension_scores {"delivery":0-4,"language_use":0-4,"topic_development":0-4}
+3) dimension_feedback (each: {"score":int,"problems":[...],"evidence":[...],"fixes":[...]}; arrays same length; >=1 item each)
+4) listening_content_check
+   {
+     "listening_key_points":[...] (ONLY from listening),
+     "missing_or_incorrect":[{"type":"listening"|"organization","issue":...,"evidence":...,"fix":...}]
+   }
+   missing_or_incorrect >=1 even if strong (advanced precision/organization/conciseness).
+5) recommended_words (EXACTLY 10; {"en":"single word","zh":"简体中文释义"})
+6) recommended_phrases (EXACTLY 10; {"en":"2-8 words","zh":"简体中文释义"})
+7) recommended_sentences (EXACTLY 5 strings; <=22 words; each uses >=1 recommended_phrase)
+8) correction
+   - A revised high-scoring answer based on the student's response
+   - Preserve original meaning and key ideas as much as possible
+   - Fix grammar, word choice, clarity, organization
+   - DO NOT invent facts outside listening
+   - 90–110 words, max 2 short paragraphs
+   - Must not mention scores/rubric/analysis
 
-4. **phrases**: List exactly FIVE useful academic/lecture-related phrases that are relevant to Task 4 integration (e.g., “According to the passage…”, “The professor expands on this idea by…”).
-
-5. **sentences**: Provide ONE example sentence for EACH phrase, in the same order. The sentences should be natural and clearly demonstrate how to use the phrases in TOEFL Task 4 responses.
-
-Output ONLY valid JSON with keys: "issues", "reason", "answer", "phrases", "sentences".
-Do NOT include any extra text outside the JSON.
+FINAL: valid JSON only; no extra keys; no trailing commas; no unescaped quotes.
 """.strip(),
 
-
-
-
-            
+     
   "followup": """
 You are an expert TOEFL Speaking tutor and English learning coach.
 
@@ -416,11 +547,11 @@ Constraints:
             model=model,
             messages=messages,
             temperature=0.3,
-            max_tokens=1000
+            max_tokens=2000
         )
 
         raw_output = response.choices[0].message.content.strip()
-
+        print("this is raw_output", raw_output)
         # 尝试解析 JSON
         try:
             result = json.loads(raw_output)
@@ -451,28 +582,140 @@ Constraints:
 
         with open(self.log_file, "a", encoding="utf-8") as f:
             f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
-
     def analyze_task1(self, question: str, student_answer: str) -> dict:
         """
-        分析 TOEFL Speaking Task 1
-       :param question: 题目文本
+        分析 TOEFL Speaking Task 1（宽松校验版本：不强制补齐/不强制截断）
+        :param question: 题目文本
         :param student_answer: 学生回答文本（语音转写后）
         :return: 结构化反馈 dict
         """
-        required_keys = {"issues", "reason", "answer", "phrases", "sentences"}
+
+        required_keys = {
+            "overall_score",
+            "dimension_feedback",
+            "recommended_words",
+            "recommended_phrases",
+            "recommended_sentences",
+        }
+
         input_data = {"question": question, "student_answer": student_answer}
 
+        def _coerce_list(x):
+            """尽量把输出转成 list（宽松处理）"""
+            if x is None:
+                return []
+            if isinstance(x, list):
+                return x
+            return [x]
+
+        def _coerce_dict(x):
+            return x if isinstance(x, dict) else {}
+
+        def _validate_structure(result: dict) -> None:
+            """最小必要检查：字段存在 + 类型基本正确（不限制长度、不补齐）"""
+            if not isinstance(result, dict):
+                raise ValueError("Model output is not a JSON object (dict).")
+
+            missing = required_keys - set(result.keys())
+            if missing:
+                raise ValueError(f"Missing required keys: {missing}")
+
+            overall = result.get("overall_score")
+            if overall is not None and (not isinstance(overall, int) or overall < 0 or overall > 4):
+                raise ValueError("overall_score must be an integer between 0 and 4 (or null).")
+
+            df = result.get("dimension_feedback")
+            if not isinstance(df, dict):
+                raise ValueError("dimension_feedback must be an object/dict.")
+
+            for dim in ["delivery", "language_use", "topic_development"]:
+                if dim not in df:
+                    raise ValueError(f"dimension_feedback missing key: {dim}")
+
+                d = df.get(dim)
+                if not isinstance(d, dict):
+                    raise ValueError(f"dimension_feedback.{dim} must be an object/dict.")
+
+                score = d.get("score")
+                if score is not None and (not isinstance(score, int) or score < 0 or score > 4):
+                    raise ValueError(f"dimension_feedback.{dim}.score must be an integer 0-4 (or null).")
+
+                # problems：允许空/多条，但应为 list（若为 str 在 normalize 里会转）
+                problems = d.get("problems", [])
+                if problems is not None and not isinstance(problems, list) and not isinstance(problems, str):
+                    raise ValueError(f"dimension_feedback.{dim}.problems must be a list or string.")
+
+            words = result.get("recommended_words")
+            if not isinstance(words, list):
+                raise ValueError("recommended_words must be a list.")
+            for i, w in enumerate(words):
+                if not isinstance(w, dict):
+                    raise ValueError(f"recommended_words[{i}] must be an object with keys en/zh.")
+                if "en" not in w or "zh" not in w:
+                    raise ValueError(f"recommended_words[{i}] missing 'en' or 'zh'.")
+
+            phrases = result.get("recommended_phrases")
+            if not isinstance(phrases, list):
+                raise ValueError("recommended_phrases must be a list.")
+            for i, p in enumerate(phrases):
+                if not isinstance(p, dict):
+                    raise ValueError(f"recommended_phrases[{i}] must be an object with keys en/zh.")
+                if "en" not in p or "zh" not in p:
+                    raise ValueError(f"recommended_phrases[{i}] missing 'en' or 'zh'.")
+
+            sents = result.get("recommended_sentences")
+            if not isinstance(sents, list) and not isinstance(sents, str):
+                raise ValueError("recommended_sentences must be a list (or string that can be coerced).")
+
+            if isinstance(sents, list):
+                for i, s in enumerate(sents):
+                    if not isinstance(s, str):
+                        raise ValueError(f"recommended_sentences[{i}] must be a string.")
+
+
+
+        def _normalize_minimal(result: dict) -> dict:
+            """
+            最小规范化：只做类型兼容（不补齐、不截断）
+            """
+            if not isinstance(result, dict):
+                return result
+
+            df = _coerce_dict(result.get("dimension_feedback"))
+            for dim in ["delivery", "language_use", "topic_development"]:
+                d = _coerce_dict(df.get(dim))
+                d["problems"] = _coerce_list(d.get("problems", []))
+
+                # 若你 prompt 未来扩展 evidence/fixes，顺手兼容
+                if "evidence" in d:
+                    d["evidence"] = _coerce_list(d.get("evidence"))
+                if "fixes" in d:
+                    d["fixes"] = _coerce_list(d.get("fixes"))
+
+                df[dim] = d
+
+            result["dimension_feedback"] = df
+
+            # recommended_sentences：若是字符串，转 list
+            result["recommended_sentences"] = _coerce_list(result.get("recommended_sentences", []))
+
+            return result
+
         try:
-            user_message = f"""TOEFL Speaking Task 1 Question:
+            user_message = f"""prompt:
 {question}
 
-Student's Response:
-{student_answer}"""
+response:
+{student_answer}
+"""
 
             result = self._call_llm(self.prompts["task1"], user_message)
-            
-            if not self._validate_feedback(result, required_keys):
-                raise ValueError(f"Missing required keys in model output. Expected: {required_keys}, Got: {result.keys()}")
+
+            # 最小规范化（不补齐/不截断）
+            result = _normalize_minimal(result)
+
+            # 结构校验（字段存在 + 类型正确）
+            _validate_structure(result)
 
             self._log_interaction("task1", input_data, result)
             return result
@@ -482,6 +725,7 @@ Student's Response:
             print(f"[ERROR] Task1 Analysis Failed: {error_msg}")
             self._log_interaction("task1", input_data, error=error_msg)
             raise
+
     def analyze_task2(
         self,
         reading_passage: str,
@@ -490,15 +734,25 @@ Student's Response:
         student_answer: str,
     ) -> dict:
         """
-        分析 TOEFL Speaking Task 2（Integrated – Campus-related）
-
+        分析 TOEFL Speaking Task 2（Integrated – Campus）
+        （宽松校验版本：不强制补齐/不强制截断，只做最小类型兼容）
         :param reading_passage: 阅读材料文本
         :param listening_passage: 听力材料文本（语音已转写）
         :param question: 题目文本（Task 2 的 prompt）
         :param student_answer: 学生回答文本（语音转写后）
         :return: 结构化反馈 dict
         """
-        required_keys = {"issues", "reason", "answer", "phrases", "sentences"}
+
+        required_keys = {
+            "overall_score",
+            "dimension_feedback",
+            "integrated_content_check",
+            "recommended_words",
+            "recommended_phrases",
+            "recommended_sentences",
+            "correction",
+        }
+
         input_data = {
             "reading_passage": reading_passage,
             "listening_passage": listening_passage,
@@ -506,29 +760,133 @@ Student's Response:
             "student_answer": student_answer,
         }
 
+        def _coerce_list(x):
+            """尽量把输出转成 list（宽松处理）"""
+            if x is None:
+                return []
+            if isinstance(x, list):
+                return x
+            return [x]
+
+        def _coerce_dict(x):
+            return x if isinstance(x, dict) else {}
+
+        def _validate_structure(result: dict) -> None:
+            """最小必要检查：字段存在 + 类型基本正确（不限制长度、不补齐）"""
+            if not isinstance(result, dict):
+                raise ValueError("Model output is not a JSON object (dict).")
+
+            missing = required_keys - set(result.keys())
+            if missing:
+                raise ValueError(f"Missing required keys: {missing}")
+
+            overall = result.get("overall_score")
+            if overall is not None and (not isinstance(overall, int) or overall < 0 or overall > 4):
+                raise ValueError("overall_score must be an integer between 0 and 4 (or null).")
+
+            df = result.get("dimension_feedback")
+            if not isinstance(df, dict):
+                raise ValueError("dimension_feedback must be an object/dict.")
+
+            for dim in ["delivery", "language_use", "topic_development"]:
+                if dim not in df:
+                    raise ValueError(f"dimension_feedback missing key: {dim}")
+
+                d = df.get(dim)
+                if not isinstance(d, dict):
+                    raise ValueError(f"dimension_feedback.{dim} must be an object/dict.")
+
+                score = d.get("score")
+                if score is not None and (not isinstance(score, int) or score < 0 or score > 4):
+                    raise ValueError(f"dimension_feedback.{dim}.score must be an integer 0-4 (or null).")
+
+                problems = d.get("problems", [])
+                if problems is not None and not isinstance(problems, list) and not isinstance(problems, str):
+                    raise ValueError(f"dimension_feedback.{dim}.problems must be a list or string.")
+
+            icc = result.get("integrated_content_check")
+            if not isinstance(icc, dict):
+                raise ValueError("integrated_content_check must be an object/dict.")
+
+            words = result.get("recommended_words")
+            if not isinstance(words, list):
+                raise ValueError("recommended_words must be a list.")
+            for i, w in enumerate(words):
+                if not isinstance(w, dict):
+                    raise ValueError(f"recommended_words[{i}] must be an object with keys en/zh.")
+                if "en" not in w or "zh" not in w:
+                    raise ValueError(f"recommended_words[{i}] missing 'en' or 'zh'.")
+
+            phrases = result.get("recommended_phrases")
+            if not isinstance(phrases, list):
+                raise ValueError("recommended_phrases must be a list.")
+            for i, p in enumerate(phrases):
+                if not isinstance(p, dict):
+                    raise ValueError(f"recommended_phrases[{i}] must be an object with keys en/zh.")
+                if "en" not in p or "zh" not in p:
+                    raise ValueError(f"recommended_phrases[{i}] missing 'en' or 'zh'.")
+
+            sents = result.get("recommended_sentences")
+            if not isinstance(sents, list) and not isinstance(sents, str):
+                raise ValueError("recommended_sentences must be a list (or string that can be coerced).")
+            if isinstance(sents, list):
+                for i, s in enumerate(sents):
+                    if not isinstance(s, str):
+                        raise ValueError(f"recommended_sentences[{i}] must be a string.")
+
+            correction = result.get("correction")
+            if correction is not None and not isinstance(correction, str):
+                raise ValueError("correction must be a string (or null).")
+
+        def _normalize_minimal(result: dict) -> dict:
+            """
+            最小规范化：只做类型兼容（不补齐、不截断）
+            """
+            if not isinstance(result, dict):
+                return result
+
+            df = _coerce_dict(result.get("dimension_feedback"))
+            for dim in ["delivery", "language_use", "topic_development"]:
+                d = _coerce_dict(df.get(dim))
+                d["problems"] = _coerce_list(d.get("problems", []))
+                if "evidence" in d:
+                    d["evidence"] = _coerce_list(d.get("evidence"))
+                if "fixes" in d:
+                    d["fixes"] = _coerce_list(d.get("fixes"))
+                df[dim] = d
+            result["dimension_feedback"] = df
+
+            icc = _coerce_dict(result.get("integrated_content_check"))
+            if "reading_key_points" in icc:
+                icc["reading_key_points"] = _coerce_list(icc.get("reading_key_points"))
+            if "listening_key_points" in icc:
+                icc["listening_key_points"] = _coerce_list(icc.get("listening_key_points"))
+            if "missing_or_incorrect" in icc:
+                icc["missing_or_incorrect"] = _coerce_list(icc.get("missing_or_incorrect"))
+            result["integrated_content_check"] = icc
+
+            result["recommended_sentences"] = _coerce_list(result.get("recommended_sentences", []))
+
+            return result
+
         try:
-            user_message = f"""TOEFL Speaking Task 2 (Integrated) Data:
-
-Reading Passage:
-{reading_passage}
-
-Listening Passage (Transcript):
-{listening_passage}
-
-TOEFL Question:
+            user_message = f"""prompt:
 {question}
 
-Student's Response:
-{student_answer}"""
+reading:
+{reading_passage}
 
-            # 使用你在 prompts 里配置好的 task2 提示词
+listening:
+{listening_passage}
+
+response:
+{student_answer}
+"""
+
             result = self._call_llm(self.prompts["task2"], user_message)
 
-            if not self._validate_feedback(result, required_keys):
-                raise ValueError(
-                    f"Missing required keys in model output. "
-                    f"Expected: {required_keys}, Got: {result.keys()}"
-                )
+            result = _normalize_minimal(result)
+            _validate_structure(result)
 
             self._log_interaction("task2", input_data, result)
             return result
@@ -539,74 +897,6 @@ Student's Response:
             self._log_interaction("task2", input_data, error=error_msg)
             raise
 
-    def answer_followup_question(
-        self,
-        reading_text: str,
-        student_answer: str,
-        student_question: str,
-        temperature: float = 0.3,
-        log: bool = True,
-    ) -> dict:
-        """
-        处理学生对某一题的追问，返回中英双语解答（字典形式）
-
-        :param reading_text: 原始题目 / 阅读材料 / 听力文本
-        :param student_answer: 学生最初的口语作答（文本版）
-        :param student_question: 学生的追问（中/英文都可以）
-        :param temperature: LLM 采样温度
-        :param log: 是否写入日志文件
-        :return: {
-            "english_answer": "...",
-            "chinese_answer": "..."
-        }
-        """
-        system_prompt = self.prompts["followup"]
-      
-        user_content = (
-            "Here is the context for the question.\n\n"
-            f"=== READING TEXT / ORIGINAL PROMPT ===\n{reading_text}\n\n"
-            f"=== STUDENT ANSWER (ORIGINAL RESPONSE) ===\n{student_answer}\n\n"
-            f"=== STUDENT FOLLOW-UP QUESTION ===\n{student_question}\n"
-        )
-
-        response = self.client.chat.completions.create(
-            model=self.model_name,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_content},
-            ],
-            temperature=temperature,
-        )
-
-        raw_text = response.choices[0].message.content.strip()
-        print("原始模型输出：", raw_text)
-        # 尝试解析 JSON
-        try:
-            result = json.loads(raw_text)
-        except json.JSONDecodeError:
-            # 如果模型有轻微格式问题，可以做一点点兜底（也可以直接 raise）
-            # 这里简单兜底成一个统一结构
-            result = {
-                "english_answer": raw_text,
-                "chinese_answer": "模型返回的 JSON 格式不完全合法，已原样保留英文内容，请检查上游 prompt 或输出。"
-            }
-
-        # 写日志（可选）
-        if log:
-            log_record = {
-                "type": "followup",
-                "reading_text": reading_text,
-                "student_answer": student_answer,
-                "student_question": student_question,
-                "model_name": self.model_name,
-                "temperature": temperature,
-                "raw_response": raw_text,
-                "parsed_response": result,
-            }
-            with open(self.log_file, "a", encoding="utf-8") as f:
-                f.write(json.dumps(log_record, ensure_ascii=False) + "\n")
-
-        return result
     def analyze_task3(
         self,
         reading_passage: str,
@@ -616,14 +906,24 @@ Student's Response:
     ) -> dict:
         """
         分析 TOEFL Speaking Task 3（Integrated – Academic）
-
+        （宽松校验版本：不强制补齐/不强制截断，只做最小类型兼容）
         :param reading_passage: 阅读材料文本（学术概念/理论等）
         :param listening_passage: 听力材料文本（教授讲解，语音已转写）
         :param question: 题目文本（Task 3 的 prompt）
         :param student_answer: 学生回答文本（语音转写后）
         :return: 结构化反馈 dict
         """
-        required_keys = {"issues", "reason", "answer", "phrases", "sentences"}
+
+        required_keys = {
+            "overall_score",
+            "dimension_feedback",
+            "integrated_content_check",
+            "recommended_words",
+            "recommended_phrases",
+            "recommended_sentences",
+            "correction",
+        }
+
         input_data = {
             "reading_passage": reading_passage,
             "listening_passage": listening_passage,
@@ -631,29 +931,133 @@ Student's Response:
             "student_answer": student_answer,
         }
 
+        def _coerce_list(x):
+            """尽量把输出转成 list（宽松处理）"""
+            if x is None:
+                return []
+            if isinstance(x, list):
+                return x
+            return [x]
+
+        def _coerce_dict(x):
+            return x if isinstance(x, dict) else {}
+
+        def _validate_structure(result: dict) -> None:
+            """最小必要检查：字段存在 + 类型基本正确（不限制长度、不补齐）"""
+            if not isinstance(result, dict):
+                raise ValueError("Model output is not a JSON object (dict).")
+
+            missing = required_keys - set(result.keys())
+            if missing:
+                raise ValueError(f"Missing required keys: {missing}")
+
+            overall = result.get("overall_score")
+            if overall is not None and (not isinstance(overall, int) or overall < 0 or overall > 4):
+                raise ValueError("overall_score must be an integer between 0 and 4 (or null).")
+
+            df = result.get("dimension_feedback")
+            if not isinstance(df, dict):
+                raise ValueError("dimension_feedback must be an object/dict.")
+
+            for dim in ["delivery", "language_use", "topic_development"]:
+                if dim not in df:
+                    raise ValueError(f"dimension_feedback missing key: {dim}")
+
+                d = df.get(dim)
+                if not isinstance(d, dict):
+                    raise ValueError(f"dimension_feedback.{dim} must be an object/dict.")
+
+                score = d.get("score")
+                if score is not None and (not isinstance(score, int) or score < 0 or score > 4):
+                    raise ValueError(f"dimension_feedback.{dim}.score must be an integer 0-4 (or null).")
+
+                problems = d.get("problems", [])
+                if problems is not None and not isinstance(problems, list) and not isinstance(problems, str):
+                    raise ValueError(f"dimension_feedback.{dim}.problems must be a list or string.")
+
+            icc = result.get("integrated_content_check")
+            if not isinstance(icc, dict):
+                raise ValueError("integrated_content_check must be an object/dict.")
+
+            words = result.get("recommended_words")
+            if not isinstance(words, list):
+                raise ValueError("recommended_words must be a list.")
+            for i, w in enumerate(words):
+                if not isinstance(w, dict):
+                    raise ValueError(f"recommended_words[{i}] must be an object with keys en/zh.")
+                if "en" not in w or "zh" not in w:
+                    raise ValueError(f"recommended_words[{i}] missing 'en' or 'zh'.")
+
+            phrases = result.get("recommended_phrases")
+            if not isinstance(phrases, list):
+                raise ValueError("recommended_phrases must be a list.")
+            for i, p in enumerate(phrases):
+                if not isinstance(p, dict):
+                    raise ValueError(f"recommended_phrases[{i}] must be an object with keys en/zh.")
+                if "en" not in p or "zh" not in p:
+                    raise ValueError(f"recommended_phrases[{i}] missing 'en' or 'zh'.")
+
+            sents = result.get("recommended_sentences")
+            if not isinstance(sents, list) and not isinstance(sents, str):
+                raise ValueError("recommended_sentences must be a list (or string that can be coerced).")
+            if isinstance(sents, list):
+                for i, s in enumerate(sents):
+                    if not isinstance(s, str):
+                        raise ValueError(f"recommended_sentences[{i}] must be a string.")
+
+            correction = result.get("correction")
+            if correction is not None and not isinstance(correction, str):
+                raise ValueError("correction must be a string (or null).")
+
+        def _normalize_minimal(result: dict) -> dict:
+            """
+            最小规范化：只做类型兼容（不补齐、不截断）
+            """
+            if not isinstance(result, dict):
+                return result
+
+            df = _coerce_dict(result.get("dimension_feedback"))
+            for dim in ["delivery", "language_use", "topic_development"]:
+                d = _coerce_dict(df.get(dim))
+                d["problems"] = _coerce_list(d.get("problems", []))
+                if "evidence" in d:
+                    d["evidence"] = _coerce_list(d.get("evidence"))
+                if "fixes" in d:
+                    d["fixes"] = _coerce_list(d.get("fixes"))
+                df[dim] = d
+            result["dimension_feedback"] = df
+
+            icc = _coerce_dict(result.get("integrated_content_check"))
+            if "reading_key_points" in icc:
+                icc["reading_key_points"] = _coerce_list(icc.get("reading_key_points"))
+            if "listening_key_points" in icc:
+                icc["listening_key_points"] = _coerce_list(icc.get("listening_key_points"))
+            if "missing_or_incorrect" in icc:
+                icc["missing_or_incorrect"] = _coerce_list(icc.get("missing_or_incorrect"))
+            result["integrated_content_check"] = icc
+
+            result["recommended_sentences"] = _coerce_list(result.get("recommended_sentences", []))
+
+            return result
+
         try:
-            user_message = f"""TOEFL Speaking Task 3 (Integrated – Academic) Data:
-
-Reading Passage:
-{reading_passage}
-
-Listening Passage (Lecture Transcript):
-{listening_passage}
-
-TOEFL Question:
+            user_message = f"""prompt:
 {question}
 
-Student's Response:
-{student_answer}"""
+reading:
+{reading_passage}
 
-            # 使用在 prompts 里配置好的 task3 提示词
+listening:
+{listening_passage}
+
+response:
+{student_answer}
+"""
+
             result = self._call_llm(self.prompts["task3"], user_message)
 
-            if not self._validate_feedback(result, required_keys):
-                raise ValueError(
-                    f"Missing required keys in model output. "
-                    f"Expected: {required_keys}, Got: {result.keys()}"
-                )
+            result = _normalize_minimal(result)
+            _validate_structure(result)
 
             self._log_interaction("task3", input_data, result)
             return result
@@ -663,6 +1067,7 @@ Student's Response:
             print(f"[ERROR] Task3 Analysis Failed: {error_msg}")
             self._log_interaction("task3", input_data, error=error_msg)
             raise
+
     def analyze_task4(
         self,
         listening_passage: str,
@@ -671,39 +1076,151 @@ Student's Response:
     ) -> dict:
         """
         分析 TOEFL Speaking Task 4（Integrated – Academic Lecture）
-
+        （宽松校验版本：不强制补齐/不强制截断，只做最小类型兼容）
         :param listening_passage: 听力材料文本（学术讲座/课堂内容，语音已转写）
         :param question: 题目文本（Task 4 的 prompt）
         :param student_answer: 学生回答文本（语音转写后）
         :return: 结构化反馈 dict
         """
-        required_keys = {"issues", "reason", "answer", "phrases", "sentences"}
+
+        required_keys = {
+            "overall_score",
+            "dimension_feedback",
+            "listening_content_check",
+            "recommended_words",
+            "recommended_phrases",
+            "recommended_sentences",
+            "correction",
+        }
+
         input_data = {
             "listening_passage": listening_passage,
             "question": question,
             "student_answer": student_answer,
         }
 
+        def _coerce_list(x):
+            """尽量把输出转成 list（宽松处理）"""
+            if x is None:
+                return []
+            if isinstance(x, list):
+                return x
+            return [x]
+
+        def _coerce_dict(x):
+            return x if isinstance(x, dict) else {}
+
+        def _validate_structure(result: dict) -> None:
+            """最小必要检查：字段存在 + 类型基本正确（不限制长度、不补齐）"""
+            if not isinstance(result, dict):
+                raise ValueError("Model output is not a JSON object (dict).")
+
+            missing = required_keys - set(result.keys())
+            if missing:
+                raise ValueError(f"Missing required keys: {missing}")
+
+            overall = result.get("overall_score")
+            if overall is not None and (not isinstance(overall, int) or overall < 0 or overall > 4):
+                raise ValueError("overall_score must be an integer between 0 and 4 (or null).")
+
+            df = result.get("dimension_feedback")
+            if not isinstance(df, dict):
+                raise ValueError("dimension_feedback must be an object/dict.")
+
+            for dim in ["delivery", "language_use", "topic_development"]:
+                if dim not in df:
+                    raise ValueError(f"dimension_feedback missing key: {dim}")
+
+                d = df.get(dim)
+                if not isinstance(d, dict):
+                    raise ValueError(f"dimension_feedback.{dim} must be an object/dict.")
+
+                score = d.get("score")
+                if score is not None and (not isinstance(score, int) or score < 0 or score > 4):
+                    raise ValueError(f"dimension_feedback.{dim}.score must be an integer 0-4 (or null).")
+
+                problems = d.get("problems", [])
+                if problems is not None and not isinstance(problems, list) and not isinstance(problems, str):
+                    raise ValueError(f"dimension_feedback.{dim}.problems must be a list or string.")
+
+            lcc = result.get("listening_content_check")
+            if not isinstance(lcc, dict):
+                raise ValueError("listening_content_check must be an object/dict.")
+
+            words = result.get("recommended_words")
+            if not isinstance(words, list):
+                raise ValueError("recommended_words must be a list.")
+            for i, w in enumerate(words):
+                if not isinstance(w, dict):
+                    raise ValueError(f"recommended_words[{i}] must be an object with keys en/zh.")
+                if "en" not in w or "zh" not in w:
+                    raise ValueError(f"recommended_words[{i}] missing 'en' or 'zh'.")
+
+            phrases = result.get("recommended_phrases")
+            if not isinstance(phrases, list):
+                raise ValueError("recommended_phrases must be a list.")
+            for i, p in enumerate(phrases):
+                if not isinstance(p, dict):
+                    raise ValueError(f"recommended_phrases[{i}] must be an object with keys en/zh.")
+                if "en" not in p or "zh" not in p:
+                    raise ValueError(f"recommended_phrases[{i}] missing 'en' or 'zh'.")
+
+            sents = result.get("recommended_sentences")
+            if not isinstance(sents, list) and not isinstance(sents, str):
+                raise ValueError("recommended_sentences must be a list (or string that can be coerced).")
+            if isinstance(sents, list):
+                for i, s in enumerate(sents):
+                    if not isinstance(s, str):
+                        raise ValueError(f"recommended_sentences[{i}] must be a string.")
+
+            correction = result.get("correction")
+            if correction is not None and not isinstance(correction, str):
+                raise ValueError("correction must be a string (or null).")
+
+        def _normalize_minimal(result: dict) -> dict:
+            """
+            最小规范化：只做类型兼容（不补齐、不截断）
+            """
+            if not isinstance(result, dict):
+                return result
+
+            df = _coerce_dict(result.get("dimension_feedback"))
+            for dim in ["delivery", "language_use", "topic_development"]:
+                d = _coerce_dict(df.get(dim))
+                d["problems"] = _coerce_list(d.get("problems", []))
+                if "evidence" in d:
+                    d["evidence"] = _coerce_list(d.get("evidence"))
+                if "fixes" in d:
+                    d["fixes"] = _coerce_list(d.get("fixes"))
+                df[dim] = d
+            result["dimension_feedback"] = df
+
+            lcc = _coerce_dict(result.get("listening_content_check"))
+            if "listening_key_points" in lcc:
+                lcc["listening_key_points"] = _coerce_list(lcc.get("listening_key_points"))
+            if "missing_or_incorrect" in lcc:
+                lcc["missing_or_incorrect"] = _coerce_list(lcc.get("missing_or_incorrect"))
+            result["listening_content_check"] = lcc
+
+            result["recommended_sentences"] = _coerce_list(result.get("recommended_sentences", []))
+
+            return result
+
         try:
-            user_message = f"""TOEFL Speaking Task 4 (Integrated – Academic Lecture) Data:
-
-Listening Passage (Lecture Transcript):
-{listening_passage}
-
-TOEFL Question:
+            user_message = f"""prompt:
 {question}
 
-Student's Response:
-{student_answer}"""
+listening:
+{listening_passage}
 
-            # 使用在 prompts 里配置好的 task4 提示词
+response:
+{student_answer}
+"""
+
             result = self._call_llm(self.prompts["task4"], user_message)
 
-            if not self._validate_feedback(result, required_keys):
-                raise ValueError(
-                    f"Missing required keys in model output. "
-                    f"Expected: {required_keys}, Got: {result.keys()}"
-                )
+            result = _normalize_minimal(result)
+            _validate_structure(result)
 
             self._log_interaction("task4", input_data, result)
             return result
@@ -716,379 +1233,546 @@ Student's Response:
 
 import os
 import io
+from urllib.parse import urljoin
+
 from django.conf import settings
+
 from reportlab.lib.pagesizes import A4
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfbase.cidfonts import UnicodeCIDFont
+
+
+# =========================
+# Globals
+# =========================
+_font_registered = False
+_chinese_styles = None
+
+
+# =========================
+# Content Builder
+# =========================
+class PDFContentBuilder:
+    """PDF内容构建器"""
+
+    def __init__(self, styles):
+        self.styles = styles
+        self.story = []
+
+    def add_title(self, text):
+        self.story.append(Paragraph(str(text), self.styles['ChineseTitle']))
+        self.add_spacer(8)
+
+    def add_heading(self, text):
+        self.story.append(Paragraph(str(text), self.styles['ChineseHeading']))
+        self.add_spacer(6)
+
+    def add_paragraph(self, text, style='ChineseNormal'):
+        if text is None:
+            return
+        s = str(text).strip()
+        if s:
+            self.story.append(Paragraph(s, self.styles.get(style, self.styles['ChineseNormal'])))
+            self.add_spacer(6)
+
+    def add_spacer(self, height=12):
+        self.story.append(Spacer(1, height))
+
+    def get_content(self):
+        return self.story
+
+
+# =========================
+# Style Manager (Apple-like)
+# =========================
+import os
+from django.conf import settings
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from urllib.parse import urljoin
+from reportlab.lib import colors
 
-# 全局变量
+# 全局变量（你原来就是这样缓存的）
+_font_registered = False
+_chinese_styles = None
+
+
+# =========================
+# Style Manager (Apple-like)
+# =========================
+
+
+# 全局变量（你原来就是这样缓存的）
 _font_registered = False
 _chinese_styles = None
 
 class PDFStyleManager:
-    """PDF样式管理器"""
-    
+    """PDF样式管理器（回到你第一版：优先系统字体/项目字体）"""
+
     @staticmethod
     def _register_chinese_font():
         """注册中文字体"""
         global _font_registered, _chinese_styles
-        
-        if _font_registered:
+        if _font_registered and _chinese_styles:
             return _chinese_styles
-        
-        # Windows 系统字体路径
+
         windows_font_paths = [
-            'C:/Windows/Fonts/simhei.ttf',      # 黑体
-            'C:/Windows/Fonts/msyh.ttc',        # 微软雅黑
-            'C:/Windows/Fonts/simsun.ttc',      # 宋体
+            "C:/Windows/Fonts/simhei.ttf",  # 黑体
+            "C:/Windows/Fonts/msyh.ttc",    # 微软雅黑
+            "C:/Windows/Fonts/simsun.ttc",  # 宋体
         ]
-        
+
         font_path = None
-        font_name = 'ChineseFont'
-        
-        # 查找可用的字体文件
+        font_name = "ChineseFont"
+
+        # 1) 查找系统字体
         for path in windows_font_paths:
             if os.path.exists(path):
                 font_path = path
-                print(f"找到字体文件: {path}")
                 break
-        
+
+        # 2) 系统字体找不到就用项目字体
         if not font_path:
-            # 如果系统字体不存在，尝试项目字体
-            project_font_path = os.path.join(settings.BASE_DIR, 'font', 'NotoSansSC-Regular.ttf')
+            base_dir = getattr(settings, "BASE_DIR", "")
+            project_font_path = os.path.join(base_dir, "font", "NotoSansSC-Regular.ttf")
             if os.path.exists(project_font_path):
                 font_path = project_font_path
-                print(f"找到项目字体文件: {project_font_path}")
-        
+
         if not font_path:
-            raise FileNotFoundError("未找到可用的中文字体文件")
-        
+            raise FileNotFoundError("未找到可用的中文字体文件（系统字体与项目字体都不存在）")
+
+        # 3) 注册字体
         try:
-            # 注册字体
             pdfmetrics.registerFont(TTFont(font_name, font_path))
-            print(f"成功注册字体: {font_name}")
         except Exception as e:
             raise Exception(f"字体注册失败: {e}")
-        
-        # 创建中文样式
+
+        # 4) 创建中文样式
         base_styles = getSampleStyleSheet()
+
         chinese_styles = {
-            'ChineseNormal': ParagraphStyle(
-                name='ChineseNormal',
+            "ChineseNormal": ParagraphStyle(
+                name="ChineseNormal",
                 fontName=font_name,
                 fontSize=11,
                 leading=16,
                 spaceAfter=6,
-                firstLineIndent=20  # 首行缩进
+                firstLineIndent=20,
             ),
-            'ChineseHeading': ParagraphStyle(
-                name='ChineseHeading',
+            "ChineseMuted": ParagraphStyle(
+                name="ChineseMuted",
+                fontName=font_name,
+                fontSize=10.5,
+                leading=15,
+                spaceAfter=4,
+                textColor=colors.HexColor("#6E6E73"),
+                firstLineIndent=0,
+            ),
+            "ChineseHeading": ParagraphStyle(
+                name="ChineseHeading",
                 fontName=font_name,
                 fontSize=14,
                 leading=18,
                 spaceAfter=12,
                 spaceBefore=12,
-                textColor='#333333'
+                textColor=colors.HexColor("#333333"),
             ),
-            'ChineseTitle': ParagraphStyle(
-                name='ChineseTitle',
+            "ChineseTitle": ParagraphStyle(
+                name="ChineseTitle",
                 fontName=font_name,
                 fontSize=16,
                 leading=22,
                 spaceAfter=18,
                 spaceBefore=18,
-                alignment=1,  # 居中
-                textColor='#000000'
+                alignment=1,
+                textColor=colors.HexColor("#000000"),
             ),
-            'ChineseBold': ParagraphStyle(
-                name='ChineseBold',
+            "ChineseBold": ParagraphStyle(
+                name="ChineseBold",
                 fontName=font_name,
                 fontSize=11,
                 leading=16,
                 spaceAfter=6,
-                textColor='#222222'
-            )
+                textColor=colors.HexColor("#222222"),
+            ),
         }
-        
-        # 将样式添加到样式表
-        for style_name, style in chinese_styles.items():
-            base_styles.add(style)
-        
+
+        def safe_add(style_obj):
+            try:
+                base_styles.add(style_obj)
+            except Exception:
+                pass
+
+        for style in chinese_styles.values():
+            safe_add(style)
+
         _font_registered = True
         _chinese_styles = chinese_styles
-        
         return chinese_styles
-    
+
     @classmethod
     def get_styles(cls):
         """获取样式"""
-        if not _font_registered:
+        if not _font_registered or not _chinese_styles:
             return cls._register_chinese_font()
         return _chinese_styles
-    
+
     @classmethod
-    def get_style(cls, style_name='ChineseNormal'):
+    def get_style(cls, style_name="ChineseNormal"):
         """获取指定样式"""
         styles = cls.get_styles()
-        return styles.get(style_name, styles['ChineseNormal'])
-
-
-class PDFContentBuilder:
-    """PDF内容构建器"""
-    
-    def __init__(self, styles):
-        self.styles = styles
-        self.story = []
-    
-    def add_title(self, text):
-        """添加标题"""
-        self.story.append(Paragraph(text, self.styles['ChineseTitle']))
-        self.add_spacer(12)
-    
-    def add_heading(self, text):
-        """添加小标题"""
-        self.story.append(Paragraph(text, self.styles['ChineseHeading']))
-        self.add_spacer(6)
-    
-    def add_paragraph(self, text, style='ChineseNormal'):
-        """添加段落"""
-        if text and text.strip():
-            self.story.append(Paragraph(text, self.styles[style]))
-            self.add_spacer(6)
-    
-    def add_bullet_point(self, label, content, style='ChineseNormal'):
-        """添加带项目符号的条目"""
-        if content and content.strip():
-            text = f"• <b>{label}：</b>{content}"
-            self.add_paragraph(text, style)
-    
-    def add_spacer(self, height=12):
-        """添加间距"""
-        self.story.append(Spacer(1, height))
-    
-    def get_content(self):
-        """获取内容"""
-        return self.story
+        return styles.get(style_name, styles["ChineseNormal"])
 
 
 class FeedbackPDFGenerator:
-    """反馈PDF生成器"""
-    
     @staticmethod
     def _clean_text(text):
-        """清理文本"""
-        if not text:
+        if text is None:
             return ""
-        # 移除多余的空白字符
-        cleaned = ' '.join(str(text).split())
-        return cleaned
-    
+        return " ".join(str(text).split())
+
     @staticmethod
-    def _format_list_data(data):
-        """格式化列表数据"""
-        if not data:
+    def _join_bullets(items):
+        if not items:
             return ""
-        if isinstance(data, list):
-            # 过滤空值并连接
-            return "；".join([str(item).strip() for item in data if str(item).strip()])
-        return str(data).strip()
-    
+        lines = []
+        for x in items:
+            s = str(x).strip()
+            if s:
+                lines.append(f"• {s}")
+        return "<br/>".join(lines)
+
+    @staticmethod
+    def _divider(width):
+        t = Table([[""]], colWidths=[width])
+        t.setStyle(TableStyle([
+            ("LINEBELOW", (0, 0), (-1, -1), 0.6, colors.HexColor("#E5E5EA")),
+            ("TOPPADDING", (0, 0), (-1, -1), 6),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
+        ]))
+        return t
+
+    @staticmethod
+    def _score_card(styles, width, overall, ds):
+        muted = styles.get("ChineseMuted", styles.get("ChineseNormal"))
+        title = styles.get("ChineseTitle", styles.get("ChineseNormal"))
+        bold = styles.get("ChineseBold", styles.get("ChineseNormal"))
+
+        overall_text = f"<b>{overall}/4</b>" if overall is not None else "<b>—</b>"
+        delivery = ds.get("delivery", "—")
+        language = ds.get("language_use", "—")
+        topic = ds.get("topic_development", "—")
+
+        left_w = min(170, max(150, width * 0.33))
+        right_w = width - left_w
+
+        data = [
+            [Paragraph("Overall", muted), Paragraph(overall_text, title)],
+            [Paragraph("Delivery", muted), Paragraph(str(delivery), bold)],
+            [Paragraph("Language Use", muted), Paragraph(str(language), bold)],
+            [Paragraph("Topic Development", muted), Paragraph(str(topic), bold)],
+        ]
+
+        table = Table(data, colWidths=[left_w, right_w])
+        table.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#F5F5F7")),
+            ("BOX", (0, 0), (-1, -1), 0.8, colors.HexColor("#E5E5EA")),
+            ("LEFTPADDING", (0, 0), (-1, -1), 14),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 14),
+            ("TOPPADDING", (0, 0), (-1, -1), 12),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 12),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ]))
+        return table
+
+    @staticmethod
+    def _pairs_table(styles, width, pairs, header_left="EN", header_right="中文释义"):
+        normal = styles.get("ChineseNormal")
+        muted = styles.get("ChineseMuted", normal)
+
+        left_w = width * 0.47
+        right_w = width - left_w
+
+        rows = [[Paragraph(header_left, muted), Paragraph(header_right, muted)]]
+
+        for it in pairs:
+            if not isinstance(it, dict):
+                continue
+            en = str(it.get("en", "")).strip()
+            zh = str(it.get("zh", "")).strip()
+            if not (en or zh):
+                continue
+            rows.append([Paragraph(en, normal), Paragraph(zh, normal)])
+
+        table = Table(rows, colWidths=[left_w, right_w])
+        table.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#F5F5F7")),
+            ("LINEBELOW", (0, 0), (-1, 0), 0.6, colors.HexColor("#E5E5EA")),
+            ("LINEBELOW", (0, 1), (-1, -1), 0.3, colors.HexColor("#EFEFF4")),
+            ("BOX", (0, 0), (-1, -1), 0.8, colors.HexColor("#E5E5EA")),
+            ("LEFTPADDING", (0, 0), (-1, -1), 10),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+            ("TOPPADDING", (0, 0), (-1, -1), 8),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ]))
+        return table
+
     @classmethod
-    def generate_pdf_report(cls, task, student_answer, feedback):
-        """生成PDF报告"""
-        
-        # 获取样式
+    def _infer_task_no(cls, task, task_no=None):
+        """兼容不同模型字段命名：task_no / task_number / task_type 等"""
+        if task_no is not None:
+            return int(task_no)
+
+        for attr in ("task_no", "task_number", "tasktype", "task_type", "task", "type"):
+            v = getattr(task, attr, None)
+            if v is None:
+                continue
+            s = str(v).lower()
+            for n in (1, 2, 3, 4):
+                if s == str(n) or f"task{n}" in s or f"_{n}" in s:
+                    return n
+
+        return 1
+
+    @classmethod
+    def _pick_task_title(cls, task, taskname=None):
+        """优先用外部传入 taskname，否则从 task 常见字段兜底"""
+        if taskname:
+            return str(taskname)
+
+        for attr in ("name", "task_name", "taskname", "title", "topic", "label"):
+            v = getattr(task, attr, None)
+            if v:
+                return str(v)
+
+        return f"ID {getattr(task, 'id', '')}"
+
+    @classmethod
+    def _build_dim_scores_from_feedback(cls, feedback: dict) -> dict:
+        """
+        兼容：如果没有 dimension_scores，就从 dimension_feedback 提取
+        """
+        if not isinstance(feedback, dict):
+            return {}
+
+        ds = feedback.get("dimension_scores")
+        if isinstance(ds, dict) and ds:
+            return ds
+
+        df = feedback.get("dimension_feedback", {})
+        if not isinstance(df, dict):
+            return {}
+
+        def pick(dim_key):
+            d = df.get(dim_key) or {}
+            if isinstance(d, dict):
+                return d.get("score", "—")
+            return "—"
+
+        return {
+            "delivery": pick("delivery"),
+            "language_use": pick("language_use"),
+            "topic_development": pick("topic_development"),
+        }
+
+    @classmethod
+    def generate_pdf_report2(cls, task, student_answer, feedback, task_no=None, taskname=None):
         styles = PDFStyleManager.get_styles()
-        
-        # 准备文件路径
-        filename = f"task1_{task.id}_report.pdf"
-        filepath = os.path.join(settings.MEDIA_ROOT, 'reports', filename)
+
+        tno = cls._infer_task_no(task, task_no=task_no)
+
+        filename = f"task{tno}_{task.id}_report.pdf"
+        filepath = os.path.join(settings.MEDIA_ROOT, "reports", filename)
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
-        
-        # 创建PDF文档
+
         pdf_io = io.BytesIO()
         doc = SimpleDocTemplate(
-            pdf_io, 
-            pagesize=A4, 
-            topMargin=30, 
-            bottomMargin=30,
-            leftMargin=40,
-            rightMargin=40
+            pdf_io,
+            pagesize=A4,
+            topMargin=36,
+            bottomMargin=36,
+            leftMargin=44,
+            rightMargin=44,
         )
-        
-        # 构建内容
+
         builder = PDFContentBuilder(styles)
-        
-        # 1. 报告标题
-        builder.add_title(f"TOEFL 口语 Task 1 评分报告：{task.name}")
-        
-        # 2. 题目信息
-        reading_text = cls._clean_text(task.readingtext)
-        if reading_text:
+
+        # ✅ Title：支持外部传 taskname + 多字段兜底
+        task_title = cls._pick_task_title(task, taskname=taskname)
+        builder.add_title(f"TOEFL 口语 Task {tno} 评分报告：{task_title}")
+
+        # ✅ 题目内容：兼容 Task1/2/3/4（reading + listening transcript）
+        question_text = cls._clean_text(getattr(task, "questiontext", "") or "")
+        reading_text = cls._clean_text(getattr(task, "readingtext", "") or "")
+        listening_text = cls._clean_text(
+            getattr(task, "listeningtext", "") or getattr(task, "listening_text", "") or ""
+        )
+
+        if question_text or reading_text or listening_text:
             builder.add_heading("题目内容")
-            builder.add_paragraph(reading_text)
-        
-        # 3. 学生回答
+
+            if question_text:
+                builder.add_paragraph("Prompt", style="ChineseMuted")
+                builder.add_paragraph(question_text, style="ChineseNormal")
+                builder.add_spacer(6)
+
+            if reading_text:
+                builder.add_paragraph("Reading", style="ChineseMuted")
+                builder.add_paragraph(reading_text, style="ChineseNormal")
+                builder.add_spacer(6)
+
+            if listening_text:
+                builder.add_paragraph("Listening Transcript", style="ChineseMuted")
+                builder.add_paragraph(listening_text, style="ChineseNormal")
+
+        builder.story.append(cls._divider(doc.width))
+
+        # -------------------------
+        # Student Answer
+        # -------------------------
         builder.add_heading("你的回答")
         student_answer_clean = cls._clean_text(student_answer) or "（无回答）"
-        builder.add_paragraph(student_answer_clean)
-        builder.add_spacer(18)
-        
-        # 4. AI 参考答案
-        model_answer = cls._clean_text(feedback.get('answer', ''))
-        if model_answer:
-            builder.add_heading("AI 参考答案")
-            builder.add_paragraph(model_answer)
-            builder.add_spacer(12)
-        
-        # 5. 问题与建议
-        issues = cls._clean_text(feedback.get('issues', ''))
-        reason = cls._clean_text(feedback.get('reason', ''))
-        
-        if issues or reason:
-            builder.add_heading("问题与建议")
-            if issues:
-                builder.add_bullet_point("问题", issues)
-            if reason:
-                builder.add_bullet_point("建议", reason)
-            builder.add_spacer(12)
-        
-        # 6. 推荐短语
-        phrases = feedback.get('phrases')
+        builder.add_paragraph(student_answer_clean, style="ChineseNormal")
+
+        # -------------------------
+        # ✅ Correction（满分修正版，紧跟学生回答）
+        # -------------------------
+        correction_text = ""
+        if isinstance(feedback, dict):
+            correction_text = cls._clean_text(feedback.get("correction", "") or "")
+
+        builder.add_spacer(6)
+        builder.add_heading("满分修正版（基于你的回答）")
+        builder.add_paragraph(
+            "在尽量保留你原意的基础上，优化表达、逻辑与语言准确性。",
+            style="ChineseMuted",
+        )
+        builder.add_paragraph(
+            correction_text if correction_text else "（暂无）",
+            style="ChineseNormal" if correction_text else "ChineseMuted",
+        )
+
+        builder.story.append(cls._divider(doc.width))
+
+        # -------------------------
+        # Scores
+        # -------------------------
+        overall = feedback.get("overall_score", None) if isinstance(feedback, dict) else None
+        dim_scores = cls._build_dim_scores_from_feedback(feedback)
+        dim_fb = feedback.get("dimension_feedback", {}) if isinstance(feedback, dict) else {}
+        dim_fb = dim_fb or {}
+
+        builder.add_heading("评分结果")
+        builder.story.append(cls._score_card(styles, doc.width, overall, dim_scores))
+        builder.add_spacer(6)
+
+        def render_dimension(title_cn, key):
+            data = dim_fb.get(key, {}) if isinstance(dim_fb, dict) else {}
+            score = data.get("score", None) if isinstance(data, dict) else None
+
+            problems = data.get("problems", []) if isinstance(data, dict) else []
+            evidence = data.get("evidence", []) if isinstance(data, dict) else []
+            fixes = data.get("fixes", []) if isinstance(data, dict) else []
+
+            score_text = f"{score}/4" if score is not None else "—/4"
+            builder.add_heading(f"{title_cn}  {score_text}")
+
+            builder.add_paragraph("Issues & Improvements", style="ChineseMuted")
+            p_text = cls._join_bullets(problems)
+            builder.add_paragraph(
+                p_text if p_text else "（暂无）",
+                style="ChineseNormal" if p_text else "ChineseMuted",
+            )
+
+            if evidence:
+                builder.add_paragraph("Evidence", style="ChineseMuted")
+                e_text = cls._join_bullets(evidence)
+                builder.add_paragraph(
+                    e_text if e_text else "（暂无）",
+                    style="ChineseNormal" if e_text else "ChineseMuted",
+                )
+
+            if fixes:
+                builder.add_paragraph("Actionable Fixes", style="ChineseMuted")
+                f_text = cls._join_bullets(fixes)
+                builder.add_paragraph(
+                    f_text if f_text else "（暂无）",
+                    style="ChineseNormal" if f_text else "ChineseMuted",
+                )
+
+            builder.story.append(cls._divider(doc.width))
+
+        render_dimension("Delivery（表达）", "delivery")
+        render_dimension("Language Use（语言运用）", "language_use")
+        render_dimension("Topic Development（内容展开）", "topic_development")
+
+        # -------------------------
+        # Reference answers（有就显示）
+        # -------------------------
+        answer1 = cls._clean_text(getattr(task, "answertext1", "") or "")
+        answer2 = cls._clean_text(getattr(task, "answertext2", "") or "")
+        if answer1 or answer2:
+            builder.add_heading("参考答案")
+            builder.add_paragraph("参考答案1", style="ChineseMuted")
+            builder.add_paragraph(answer1 if answer1 else "无", style="ChineseNormal")
+            builder.add_spacer(4)
+            builder.add_paragraph("参考答案2", style="ChineseMuted")
+            builder.add_paragraph(answer2 if answer2 else "无", style="ChineseNormal")
+            builder.story.append(cls._divider(doc.width))
+
+        # -------------------------
+        # Recommendations
+        # -------------------------
+        words = feedback.get("recommended_words", []) if isinstance(feedback, dict) else []
+        if words:
+            builder.add_heading("推荐单词")
+            builder.story.append(
+                cls._pairs_table(styles, doc.width, words[:10], header_left="Word", header_right="中文释义")
+            )
+            builder.story.append(cls._divider(doc.width))
+
+        phrases = feedback.get("recommended_phrases", []) if isinstance(feedback, dict) else []
         if phrases:
-            phrase_text = cls._format_list_data(phrases)
-            if phrase_text:
-                builder.add_heading("推荐短语")
-                builder.add_paragraph(phrase_text)
-                builder.add_spacer(12)
-        
-        # 7. 推荐句型
-        sentences = feedback.get('sentences')
+            builder.add_heading("推荐短语")
+            builder.story.append(
+                cls._pairs_table(styles, doc.width, phrases[:10], header_left="Phrase", header_right="中文释义")
+            )
+            builder.story.append(cls._divider(doc.width))
+
+        sentences = feedback.get("recommended_sentences", []) if isinstance(feedback, dict) else []
         if sentences:
-            sentence_text = cls._format_list_data(sentences)
-            if sentence_text:
-                builder.add_heading("推荐句型")
-                builder.add_paragraph(sentence_text)
-        
-        # 构建PDF
-        try:
-            doc.build(builder.get_content())
-            
-            # 写入文件
-            with open(filepath, 'wb') as f:
-                f.write(pdf_io.getvalue())
-            
-            print(f"PDF报告生成成功: {filename}")
-            return urljoin(settings.MEDIA_URL, f'reports/{filename}')
-            
-        except Exception as e:
-            print(f"PDF生成失败: {e}")
-            raise
+            builder.add_heading("推荐句子")
+            for i, s in enumerate(sentences[:5], 1):
+                s_clean = cls._clean_text(s)
+                if s_clean:
+                    builder.add_paragraph(f"{i}. {s_clean}", style="ChineseNormal")
+            builder.add_spacer(6)
+
+        doc.build(builder.get_content())
+
+        with open(filepath, "wb") as f:
+            f.write(pdf_io.getvalue())
+
+        return urljoin(settings.MEDIA_URL, f"reports/{filename}")
+
     @classmethod
-    def generate_pdf_report2(cls, task, student_answer, feedback):
-        """生成PDF报告"""
-        
-        # 获取样式
-        styles = PDFStyleManager.get_styles()
-        
-        # 准备文件路径
-        filename = f"task1_{task.id}_report.pdf"
-        filepath = os.path.join(settings.MEDIA_ROOT, 'reports', filename)
-        os.makedirs(os.path.dirname(filepath), exist_ok=True)
-        
-        # 创建PDF文档
-        pdf_io = io.BytesIO()
-        doc = SimpleDocTemplate(
-            pdf_io, 
-            pagesize=A4, 
-            topMargin=30, 
-            bottomMargin=30,
-            leftMargin=40,
-            rightMargin=40
+    def generate_pdf_report(cls, task, student_answer, feedback, task_no=None, taskname=None):
+        return cls.generate_pdf_report2(
+            task=task,
+            student_answer=student_answer,
+            feedback=feedback,
+            task_no=task_no,
+            taskname=taskname,
         )
-        
-        # 构建内容
-        builder = PDFContentBuilder(styles)
-        
-        # 1. 报告标题
-        builder.add_title(f"TOEFL 口语 Task 1 评分报告：{task.name}")
-        
-        # 2. 题目信息
-        reading_text = cls._clean_text(task.questiontext)
-        if reading_text:
-            builder.add_heading("题目内容")
-            builder.add_paragraph(reading_text)
-        
-        # 3. 学生回答
-        builder.add_heading("你的回答")
-        student_answer_clean = cls._clean_text(student_answer) or "（无回答）"
-        builder.add_paragraph(student_answer_clean)
-        builder.add_spacer(18)
-        
-        # 4. AI 参考答案
-        model_answer = cls._clean_text(feedback.get('answer', ''))
-        if model_answer:
-            builder.add_heading("AI 参考答案")
-            builder.add_paragraph(model_answer)
-            builder.add_spacer(12)
-        
-        # 5. 问题与建议
-        issues = cls._clean_text(feedback.get('issues', ''))
-        reason = cls._clean_text(feedback.get('reason', ''))
-        
-        if issues or reason:
-            builder.add_heading("问题与建议")
-            if issues:
-                builder.add_bullet_point("问题", issues)
-            if reason:
-                builder.add_bullet_point("建议", reason)
-            builder.add_spacer(12)
-        
-        # 6. 推荐短语
-        phrases = feedback.get('phrases')
-        if phrases:
-            phrase_text = cls._format_list_data(phrases)
-            if phrase_text:
-                builder.add_heading("推荐短语")
-                builder.add_paragraph(phrase_text)
-                builder.add_spacer(12)
-        
-        # 7. 推荐句型
-        sentences = feedback.get('sentences')
-        if sentences:
-            sentence_text = cls._format_list_data(sentences)
-            if sentence_text:
-                builder.add_heading("推荐句型")
-                builder.add_paragraph(sentence_text)
-        
-        # 构建PDF
-        try:
-            doc.build(builder.get_content())
-            
-            # 写入文件
-            with open(filepath, 'wb') as f:
-                f.write(pdf_io.getvalue())
-            
-            print(f"PDF报告生成成功: {filename}")
-            return urljoin(settings.MEDIA_URL, f'reports/{filename}')
-            
-        except Exception as e:
-            print(f"PDF生成失败: {e}")
-            raise
-
-
-
-# 向后兼容的快捷函数
-def generate_pdf_report(task, student_answer, feedback):
-    """生成PDF报告（快捷函数）"""
-    return FeedbackPDFGenerator.generate_pdf_report(task, student_answer, feedback)
-def generate_pdf_report2(task, student_answer, feedback):
-    """生成PDF报告（快捷函数）"""
-    return FeedbackPDFGenerator.generate_pdf_report2(task, student_answer, feedback)
 
 
 
 
+
+def generate_pdf_report2(task, student_answer, feedback, task_no="1", taskname="任务1"):
+    return FeedbackPDFGenerator.generate_pdf_report2(task, student_answer, feedback, task_no=task_no, taskname=taskname)

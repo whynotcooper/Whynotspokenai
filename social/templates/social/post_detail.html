@@ -1,0 +1,327 @@
+{% extends "base.html" %}
+{% block title %}Post · {{ post.author.username }}{% endblock %}
+{% block header_title %}帖子{% endblock %}
+
+{% block page_style %}
+  .wrap{max-width:1180px;margin:0 auto;padding:16px 20px 56px;}
+
+  /* Apple-like material */
+  .card{
+    background:color-mix(in srgb, var(--card-bg) 78%, transparent);
+    backdrop-filter: blur(var(--blur));
+    -webkit-backdrop-filter: blur(var(--blur));
+    border:1px solid rgba(255,255,255,.18);
+    box-shadow: 0 14px 44px rgba(0,0,0,.12);
+    border-radius:22px;
+  }
+
+  .layout{
+    display:grid;
+    grid-template-columns: 1.25fr 0.95fr;
+    gap:14px;
+    align-items:start;
+  }
+  @media (max-width: 980px){
+    .layout{grid-template-columns:1fr;}
+  }
+
+  /* Left media */
+  .mediaWrap{padding:12px;}
+  .mediaCard{border-radius:20px;overflow:hidden;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);}
+  .sticky{
+    position:sticky;
+    top:14px;
+  }
+  @media (max-width:980px){
+    .sticky{position:relative;top:auto;}
+  }
+
+  .carousel{position:relative;width:100%;overflow:hidden;background:rgba(103,80,164,.06);}
+  .carousel-track{display:flex;width:100%;transition:transform .25s ease;will-change:transform;}
+  .carousel-slide{min-width:100%;}
+  .post-cover{
+    width:100%;
+    aspect-ratio: 4 / 5;
+    object-fit:cover;
+    display:block;
+    background:rgba(103,80,164,.12);
+  }
+
+  .car-btn{
+    position:absolute;top:50%;transform:translateY(-50%);
+    width:36px;height:36px;border-radius:999px;border:none;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(0,0,0,.32);color:#fff;
+    backdrop-filter:blur(8px);
+  }
+  .car-btn:hover{background:rgba(0,0,0,.42);}
+  .car-btn.prev{left:12px;}
+  .car-btn.next{right:12px;}
+
+  .car-dots{
+    position:absolute;left:0;right:0;bottom:12px;
+    display:flex;justify-content:center;gap:6px;
+  }
+  .car-dot{
+    width:7px;height:7px;border-radius:999px;border:none;cursor:pointer;
+    background:rgba(255,255,255,.42);
+  }
+  .car-dot.is-active{background:#fff;transform:scale(1.15);}
+
+  /* Right content */
+  .side{padding:16px;}
+  .topbar{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px;}
+  .author{
+    display:flex;align-items:center;gap:10px;min-width:0;
+  }
+  .avatar{
+    width:40px;height:40px;border-radius:14px;
+    background:linear-gradient(135deg,#6750a4,#9f7aea);
+    display:flex;align-items:center;justify-content:center;color:#fff;
+    font-weight:800;
+    overflow:hidden;
+  }
+  .avatar img{width:100%;height:100%;object-fit:cover;}
+  .authorMeta{min-width:0;}
+  .nameLine{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;}
+  .aName{
+    font-weight:850;letter-spacing:-0.01em;
+    color:var(--text);text-decoration:none;
+    max-width:260px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .time{opacity:.62;font-size:12px;}
+  .sub{opacity:.72;font-size:13px;line-height:1.45;margin-top:3px;}
+
+  .btn{
+    padding:10px 14px;border-radius:999px;border:none;cursor:pointer;
+    font-weight:750;transition:.16s ease;text-decoration:none;
+    display:inline-flex;align-items:center;justify-content:center;
+  }
+  .btn.ghost{
+    background:rgba(255,255,255,.14);
+    border:1px solid rgba(255,255,255,.18);
+    color:var(--text);
+  }
+  .btn.danger{
+    background:rgba(255,0,0,.12);
+    border:1px solid rgba(255,0,0,.22);
+    color:var(--text);
+  }
+
+  .title{
+    font-size:18px;font-weight:900;letter-spacing:-0.02em;
+    margin:8px 0 10px;
+  }
+  .content{
+    font-size:14px;line-height:1.65;opacity:.92;
+    white-space:pre-wrap;
+  }
+
+  .divider{height:1px;background:rgba(255,255,255,.14);margin:14px 0;}
+
+  /* Comments */
+  .c-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;}
+  .c-head b{font-weight:900;}
+  .c-list{display:flex;flex-direction:column;gap:10px;max-height:360px;overflow:auto;padding-right:6px;}
+  .c-item{
+    padding:12px;border-radius:18px;
+    background:rgba(255,255,255,.12);
+    border:1px solid rgba(255,255,255,.14);
+  }
+  .c-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:6px;}
+  .c-user{
+    display:flex;gap:8px;align-items:baseline;min-width:0;
+  }
+  .c-user a{
+    font-weight:850;color:var(--text);text-decoration:none;
+    max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .c-time{opacity:.58;font-size:12px;}
+  .c-text{font-size:13px;line-height:1.55;opacity:.9;white-space:pre-wrap;}
+
+  .c-form{margin-top:12px;}
+  .c-input{
+    width:100%;
+    padding:12px;border-radius:16px;border:none;outline:none;
+    background:rgba(255,255,255,.22);
+    color:var(--text);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
+    resize:vertical;min-height:92px;
+  }
+  .c-actions{display:flex;justify-content:flex-end;margin-top:10px;gap:10px;}
+{% endblock %}
+
+{% block content %}
+<div class="wrap">
+  <div class="layout">
+
+    <!-- Left -->
+    <div class="card mediaWrap sticky">
+      <div class="mediaCard">
+        {% with post.images.all as imgs %}
+          {% if imgs %}
+            <div class="carousel" data-carousel>
+              <div class="carousel-track" data-track>
+                {% for img in imgs %}
+                  <div class="carousel-slide">
+                    <img src="{{ img.image.url }}" class="post-cover" alt="">
+                  </div>
+                {% endfor %}
+              </div>
+
+              {% if imgs|length > 1 %}
+                <button type="button" class="car-btn prev" data-prev aria-label="Previous">‹</button>
+                <button type="button" class="car-btn next" data-next aria-label="Next">›</button>
+                <div class="car-dots" data-dots>
+                  {% for img in imgs %}
+                    <button type="button"
+                            class="car-dot {% if forloop.first %}is-active{% endif %}"
+                            data-dot data-index="{{ forloop.counter0 }}"
+                            aria-label="Go to {{ forloop.counter }}"></button>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
+          {% else %}
+            <div style="padding:18px;opacity:.75;">没有图片</div>
+          {% endif %}
+        {% endwith %}
+      </div>
+    </div>
+
+    <!-- Right -->
+    <div class="card side">
+      <div class="topbar">
+        <div class="author">
+          <div class="avatar">
+            {% if post.author.avatar %}
+              <img src="{{ post.author.avatar.url }}" alt="avatar">
+            {% else %}
+              {{ post.author.username|first|default:"U" }}
+            {% endif %}
+          </div>
+          <div class="authorMeta">
+            <div class="nameLine">
+              <a class="aName" href="{% url 'social:profile' username=post.author.username %}">
+                {{ post.author.username }}
+              </a>
+              <div class="time">{{ post.created_at|date:"Y-m-d H:i" }}</div>
+            </div>
+            <div class="sub">点击作者可查看 Ta 的主页与历史帖子。</div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:10px;align-items:center;">
+          {% if is_owner %}
+            <form method="post" action="{% url 'social:post_delete' post.id %}"
+                  onsubmit="return confirm('确定要删除这条投稿吗？删除后不可恢复。');">
+              {% csrf_token %}
+              <button type="submit" class="btn danger">删除</button>
+            </form>
+          {% endif %}
+          <a class="btn ghost" href="{% url 'social:profile' username=post.author.username %}">返回主页</a>
+        </div>
+      </div>
+
+      {% if post.title %}
+        <div class="title">{{ post.title }}</div>
+      {% endif %}
+      <div class="content">{{ post.content }}</div>
+
+      <div class="divider"></div>
+
+      <div class="c-head">
+        <b>评论</b>
+        <div style="opacity:.65;font-size:12px;">{{ comments|length }} 条</div>
+      </div>
+
+      <div class="c-list">
+        {% for c in comments %}
+          <div class="c-item">
+            <div class="c-top">
+              <div class="c-user">
+                <a href="{% url 'social:profile' username=c.author_name %}">{{ c.author_name|default:"匿名" }}</a>
+              </div>
+              <div class="c-time">{{ c.created_at|date:"m-d H:i" }}</div>
+            </div>
+            <div class="c-text">{{ c.content }}</div>
+          </div>
+        {% empty %}
+          <div style="opacity:.7;">还没有评论，来写第一条。</div>
+        {% endfor %}
+      </div>
+
+      <form class="c-form" method="post">
+        {% csrf_token %}
+        {{ comment_form.content }}
+        <div class="c-actions">
+          <button type="submit" class="btn ghost">发送评论</button>
+        </div>
+      </form>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+/**
+ * 多图轮播（同你现有逻辑一致）：每个 .carousel 独立工作
+ */
+(function(){
+  const carousels = document.querySelectorAll('[data-carousel]');
+  carousels.forEach((root)=>{
+    const track = root.querySelector('[data-track]');
+    if(!track) return;
+
+    const slides = Array.from(track.children);
+    const prevBtn = root.querySelector('[data-prev]');
+    const nextBtn = root.querySelector('[data-next]');
+    const dotsWrap = root.querySelector('[data-dots]');
+    const dots = dotsWrap ? Array.from(dotsWrap.querySelectorAll('[data-dot]')) : [];
+
+    if(slides.length <= 1) return;
+
+    let index = 0;
+    function go(i){
+      index = (i + slides.length) % slides.length;
+      track.style.transform = `translateX(${-index * 100}%)`;
+      if(dots.length){
+        dots.forEach(d=>d.classList.remove('is-active'));
+        dots[index]?.classList.add('is-active');
+      }
+    }
+
+    prevBtn?.addEventListener('click', ()=> go(index - 1));
+    nextBtn?.addEventListener('click', ()=> go(index + 1));
+    dots.forEach(dot=>{
+      dot.addEventListener('click', ()=>{
+        const i = Number(dot.dataset.index || 0);
+        go(i);
+      });
+    });
+
+    // touch swipe
+    let startX=0, deltaX=0, dragging=false;
+    root.addEventListener('touchstart',(e)=>{
+      if(!e.touches || e.touches.length!==1) return;
+      dragging=true; startX=e.touches[0].clientX; deltaX=0;
+    },{passive:true});
+    root.addEventListener('touchmove',(e)=>{
+      if(!dragging || !e.touches || e.touches.length!==1) return;
+      deltaX=e.touches[0].clientX-startX;
+    },{passive:true});
+    root.addEventListener('touchend',()=>{
+      if(!dragging) return;
+      dragging=false;
+      if(Math.abs(deltaX)>35){
+        if(deltaX<0) go(index+1); else go(index-1);
+      }
+    });
+
+    go(0);
+  });
+})();
+</script>
+{% endblock %}

@@ -53,7 +53,6 @@ def _save_and_transcode(audio):# 用来转录语音为wav格式
         raise RuntimeError("ffmpeg 未找到，请确保已安装并加入系统 PATH")
 
     return tmp, wav
-
 def _safe_remove(*paths):
     for p in paths:
         try:
@@ -147,60 +146,121 @@ def process_audio(request):# 用来处理上传的音频文件变成文本文件
         _safe_remove(tmp_path, wav_path)
         # 注意：tts_output_path 不删除，留给前端访问
         # 注意：tts_output_path 不删除，留给前端访问
+import io
+import json
+import traceback
+from xml.sax.saxutils import escape
+
+from django.http import HttpResponse, JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.cidfonts import UnicodeCIDFont
+
+
 @csrf_exempt
-def finish_session(request):# 这里其实没有做好，后续用来可以连续对话，分析
-    questions = request.session.pop("questions", [])
-    if not questions:
-        return JsonResponse({"error": "No dialogue yet"}, status=400)
+def finish_session(request):
+    try:
+        # 1) 优先从前端 JSON 里拿 conversation
+        conversation = []
+        if request.body:
+            try:
+                payload = json.loads(request.body.decode("utf-8"))
+                conversation = payload.get("conversation", []) or []
+            except Exception:
+                conversation = []
 
-    # 初始化文本分析管道
-    analysis_pipeline = TextAnalysisPipeline()
+        # 2) fallback：旧逻辑 session
+        questions = request.session.pop("questions", [])
+        if not questions and conversation:
+            # 你原来的 pipeline 是 analyse_response(question)
+            # 这里用“用户说的话”当 question；如果你想把 system 也拼进去也可以
+            questions = [x.get("user", "") for x in conversation if isinstance(x, dict)]
 
-    # 生成详细分析报告
-    report = []
-    for idx, question in enumerate(questions, 1):
-        analyse = analysis_pipeline.analyse_response(question)
-        report.append({
-            "round": idx,
-            "original": question,
-            "issues": analyse.get("issues", []),
-            "corrected": analyse.get("corrected", ""),
-            "advanced": analyse.get("advanced", ""),
-            "extra_words": analyse.get("extra_words", []),
-            "extra_idioms": analyse.get("extra_idioms", []),
-            "extra_phrase": analyse.get("extra_phrase", []),
-            "extra": analyse.get("extra", [])
-        })
+        if not questions:
+            return JsonResponse(
+                {"error": "No dialogue yet", "hint": "session.questions 为空且 request.body.conversation 为空"},
+                status=400
+            )
 
-    # 生成 PDF
-    pdf_io = io.BytesIO()
-    doc = SimpleDocTemplate(pdf_io, pagesize=letter)
-    story = []
-    styles = getSampleStyleSheet()
-    for item in report:
-        story.append(Paragraph(f"Round {item['round']}", styles['Heading2']))
-        story.append(Spacer(1, 6))
-        story.append(Paragraph("Original: " + item['original'], styles['Normal']))
-        story.append(Paragraph("Issues: " + "; ".join(item['issues']), styles['Normal']))
-        story.append(Paragraph("Corrected: " + item['corrected'], styles['Normal']))
-        story.append(Paragraph("Advanced: " + item['advanced'], styles['Normal']))
-        story.append(Paragraph("Extra words: " + "; ".join(item['extra_words']), styles['Normal']))
-        story.append(Paragraph("Extra idioms: " + "; ".join(item['extra_idioms']), styles['Normal']))
-        story.append(Paragraph("Extra phrase: " + "; ".join(item['extra_phrase']), styles['Normal']))
-        story.append(Paragraph("Extra examples:", styles['Normal']))
-        for ex in item['extra']:
-            story.append(Paragraph(f"- {ex}", styles['Normal']))
+        # 初始化文本分析管道
+        analysis_pipeline = TextAnalysisPipeline()
+
+        report = []
+        for idx, question in enumerate(questions, 1):
+            analyse = analysis_pipeline.analyse_response(question)
+            report.append({
+                "round": idx,
+                "original": question,
+                "issues": analyse.get("issues", []),
+                "corrected": analyse.get("corrected", ""),
+                "advanced": analyse.get("advanced", ""),
+                "extra_words": analyse.get("extra_words", []),
+                "extra_idioms": analyse.get("extra_idioms", []),
+                "extra_phrase": analyse.get("extra_phrase", []),
+                "extra": analyse.get("extra", [])
+            })
+
+        # 3) 生成 PDF（中文稳：STSong-Light）
+        pdfmetrics.registerFont(UnicodeCIDFont('STSong-Light'))
+
+        styles = getSampleStyleSheet()
+        TitleCN = ParagraphStyle("TitleCN", parent=styles["Title"], fontName="STSong-Light")
+        BodyCN = ParagraphStyle("BodyCN", parent=styles["Normal"], fontName="STSong-Light", leading=16)
+
+        def safe_text(x):
+            """把 list/dict/None 转成字符串，并做 XML 转义，避免 Paragraph 解析崩溃。"""
+            if x is None:
+                s = ""
+            elif isinstance(x, (list, tuple)):
+                s = "；".join(str(i) for i in x if i is not None)
+            else:
+                s = str(x)
+            return escape(s)  # ✅ 关键：转义 < & >
+
+        pdf_io = io.BytesIO()
+        doc = SimpleDocTemplate(pdf_io, pagesize=letter)
+        story = []
+
+        story.append(Paragraph("语音对话分析报告", TitleCN))
         story.append(Spacer(1, 12))
-    doc.build(story)
 
-    pdf_io.seek(0)
-    response = HttpResponse(pdf_io, content_type="application/pdf")
-    response["Content-Disposition"] = 'attachment; filename="spoken_report.pdf"'
-    print("PDF generated successfully")
-    return response
+        for item in report:
+            story.append(Paragraph(f"Round {item['round']}", BodyCN))
+            story.append(Spacer(1, 6))
+            story.append(Paragraph("Original: " + safe_text(item["original"]), BodyCN))
+            story.append(Paragraph("Issues: " + safe_text(item["issues"]), BodyCN))
+            story.append(Paragraph("Corrected: " + safe_text(item["corrected"]), BodyCN))
+            story.append(Paragraph("Advanced: " + safe_text(item["advanced"]), BodyCN))
+            story.append(Paragraph("Extra words: " + safe_text(item["extra_words"]), BodyCN))
+            story.append(Paragraph("Extra idioms: " + safe_text(item["extra_idioms"]), BodyCN))
+            story.append(Paragraph("Extra phrase: " + safe_text(item["extra_phrase"]), BodyCN))
+            story.append(Paragraph("Extra examples:", BodyCN))
+            for ex in (item.get("extra") or []):
+                story.append(Paragraph("- " + safe_text(ex), BodyCN))
+            story.append(Spacer(1, 12))
 
-# -------------- 小工具 --------------
+        doc.build(story)
 
+        pdf_io.seek(0)
+        response = HttpResponse(pdf_io.getvalue(), content_type="application/pdf")
+        response["Content-Disposition"] = 'attachment; filename="spoken_report.pdf"'
+        return response
+
+    except Exception as e:
+        tb = traceback.format_exc()
+        print(tb)  # 服务器日志也能看到
+        return JsonResponse(
+            {
+                "error": "finish_session failed",
+                "message": str(e),
+                "trace": tb,   # 如果你担心泄露，生产环境可以去掉
+            },
+            status=500
+        )
 
 # 把 text_to_speech 封装成「保存为文件」版本
 def text_to_speech_file(self, text, outfile):
@@ -424,7 +484,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 import json
-from .utils import generate_pdf_report, generate_pdf_report2  # 你需要实现这个函数
+from .utils import generate_pdf_report2  # 你需要实现这个函数
 
 @csrf_exempt
 @require_http_methods(["POST"])
@@ -435,47 +495,54 @@ def analyse_task1(request, task_id):
     task = get_object_or_404(Task1Model, id=task_id)
     try:
         data = json.loads(request.body)
-        student_answer = data.get('student_answer', '').strip()
+        student_answer = (data.get("student_answer") or "").strip()
         if not student_answer:
-            return JsonResponse({'error': 'Empty answer'}, status=400)
+            return JsonResponse({"error": "Empty answer"}, status=400)
 
         # AI 分析
         feedback = analysis_task_pipeline.analyze_task1(
             question=task.readingtext or "No prompt provided.",
             student_answer=student_answer
         )
+        print("this is feedback", feedback)
 
-        # 生成 PDF（你需要实现 generate_pdf_report）
-        pdf_url = generate_pdf_report(
+        # ✅ 任务名称：直接用 task_name（没有就兜底）
+        taskname = (getattr(task, "task_name", None) or "").strip() or "TOEFL Task1"
+
+        # ✅ 生成 PDF（传 taskname；可选传 task_no=1）
+        pdf_url = generate_pdf_report2(
             task=task,
             student_answer=student_answer,
-            feedback=feedback
+            feedback=feedback,
+            task_no=1,
+            taskname=taskname,
         )
 
         return JsonResponse({
-            'success': True,
-            'feedback': feedback,
-            'pdf_url': pdf_url
+            "success": True,
+            "feedback": feedback,
+            "pdf_url": pdf_url
         })
 
     except Exception as e:
         import traceback
         print(f"[ERROR] Analysis failed: {e}\n{traceback.format_exc()}")
-        return JsonResponse({'error': str(e)}, status=500)
+        return JsonResponse({"error": str(e)}, status=500)
+
+
 @csrf_exempt
 @require_http_methods(["POST"])
 def analyse_task2(request, task_id):
     """
     接收用户的 Task2 回答文本，进行 AI 分析并生成 PDF。
     """
-    # 获取对应的 Task2 题目
     task = get_object_or_404(Task2Model, id=task_id)
 
     try:
         data = json.loads(request.body)
-        student_answer = data.get('student_answer', '').strip()
+        student_answer = (data.get("student_answer") or "").strip()
         if not student_answer:
-            return JsonResponse({'error': 'Empty answer'}, status=400)
+            return JsonResponse({"error": "Empty answer"}, status=400)
 
         # === 调用 AI 分析（Task2 专用） ===
         feedback = analysis_task_pipeline.analyze_task2(
@@ -485,24 +552,28 @@ def analyse_task2(request, task_id):
             student_answer=student_answer
         )
 
+        # ✅ 任务名称：直接用 task_name（没有就兜底）
+        taskname = (getattr(task, "task_name", None) or "").strip() or "TOEFL Task2"
+
         # === 生成 PDF 报告 ===
-        # 如果 generate_pdf_report 已经支持 Task1，用法基本可以复用
-        pdf_url = generate_pdf_report(
+        pdf_url = generate_pdf_report2(
             task=task,
             student_answer=student_answer,
-            feedback=feedback
+            feedback=feedback,
+            task_no=2,
+            taskname=taskname,
         )
 
         return JsonResponse({
-            'success': True,
-            'feedback': feedback,
-            'pdf_url': pdf_url
+            "success": True,
+            "feedback": feedback,
+            "pdf_url": pdf_url
         })
 
     except Exception as e:
         import traceback
         print(f"[ERROR] Task2 Analysis failed: {e}\n{traceback.format_exc()}")
-        return JsonResponse({'error': str(e)}, status=500)
+        return JsonResponse({"error": str(e)}, status=500)
 def solve_followup(request):
     """
     接收前端 follow-up 追问，调用 AI 追问 agent，并把结果以 JSON 返回给页面。
@@ -597,7 +668,7 @@ def analyse_task3(request, task_id):
         )
 
         # === 生成 PDF 报告 ===
-        pdf_url = generate_pdf_report(
+        pdf_url = generate_pdf_report2(
             task=task,
             student_answer=student_answer,
             feedback=feedback

@@ -13,4 +13,9 @@ urlpatterns = [
     # 接口：发送消息 / 拉取新消息（AJAX）
     path("forum/<slug:slug>/send/", views.send_message, name="send_message"),
     path("forum/<slug:slug>/poll/", views.poll_messages, name="poll_messages"),
+    path("post/<int:post_id>/delete/", views.post_delete, name="post_delete"),
+    path("lobby/send/", views.lobby_send, name="lobby_send"),
+    path("lobby/poll/", views.lobby_poll, name="lobby_poll"),
+
+    path("post/<int:post_id>/", views.post_detail, name="post_detail"),   # ✅ 新增
 ]

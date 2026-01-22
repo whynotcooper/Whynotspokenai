@@ -1,222 +1,327 @@
+
 <!-- templates/toefl_task4.html -->
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>托福口语 Task4 题库 | TOEFL Speaking Practice</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>托福口语 Task4 题库 | TOEFL Speaking Practice</title>
 
-        body {
-            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #e4edf9 100%);
-            color: #333;
-            line-height: 1.6;
-            padding: 20px;
-            min-height: 100vh;
-        }
+  <!-- Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-        }
+  <style>
+    :root{
+      --bg1:#f7f9fc;
+      --bg2:#eef3fb;
+      --card:#ffffff;
+      --text:#1f2937;
+      --muted:#6b7280;
+      --border:#e8eef6;
 
-        header {
-            text-align: center;
-            padding: 40px 20px;
-            margin-bottom: 30px;
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
-            position: relative;
-            overflow: hidden;
-        }
+      /* Task4 accent (lecture / academic blue) */
+      --accent1:#2980b9;
+      --accent2:#8e44ad;
 
-        header::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 6px;
-            background: linear-gradient(90deg, #2980b9, #3498db, #8e44ad);
-        }
+      --shadow: 0 10px 30px rgba(17, 24, 39, 0.06);
+      --shadowHover: 0 14px 40px rgba(41, 128, 185, 0.18);
+      --radius: 18px;
+    }
 
-        h1 {
-            font-size: 2.4rem;
-            color: #2c3e50;
-            margin-bottom: 12px;
-            font-weight: 700;
-        }
+    *{ margin:0; padding:0; box-sizing:border-box; }
 
-        .subtitle {
-            color: #7f8c8d;
-            font-size: 1.1rem;
-            max-width: 600px;
-            margin: 0 auto;
-        }
+    body{
+      font-family: 'Segoe UI', 'Microsoft YaHei', system-ui, -apple-system, Arial, sans-serif;
+      background: radial-gradient(1200px 700px at 18% 0%, rgba(41, 128, 185, 0.10), transparent 55%),
+                  radial-gradient(1000px 600px at 90% 10%, rgba(142, 68, 173, 0.10), transparent 60%),
+                  linear-gradient(135deg, var(--bg1), var(--bg2));
+      color: var(--text);
+      line-height: 1.6;
+      padding: 22px;
+      min-height: 100vh;
+    }
 
-        .task-grid {
-            display: grid;
-            gap: 16px;
-        }
+    .container{
+      max-width: 920px;
+      margin: 0 auto;
+    }
 
-        .task-card {
-            background: white;
-            border-radius: 14px;
-            padding: 20px 24px;
-            text-decoration: none;
-            color: inherit;
-            display: flex;
-            align-items: center;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
-            border: 1px solid #eef2f7;
-        }
+    header{
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+      padding: 38px 26px 28px;
+      margin-bottom: 18px;
+      position: relative;
+      overflow: hidden;
+    }
 
-        .task-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(41, 128, 185, 0.25);
-            border-color: #2980b9;
-        }
+    header::before{
+      content:"";
+      position:absolute;
+      top:0; left:0;
+      width:100%;
+      height:6px;
+      background: linear-gradient(90deg, var(--accent1), var(--accent2));
+    }
 
-        .task-icon {
-            width: 48px;
-            height: 48px;
-            background: linear-gradient(135deg, #2980b9, #3498db);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 20px;
-            color: white;
-            font-size: 20px;
-        }
+    .brand{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:12px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
 
-        .task-info {
-            flex: 1;
-        }
+    .brand-badge{
+      width:44px;
+      height:44px;
+      border-radius: 14px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:#fff;
+      background: linear-gradient(135deg, var(--accent1), var(--accent2));
+      box-shadow: 0 10px 25px rgba(41, 128, 185, 0.22);
+    }
 
-        .task-info h2 {
-            font-size: 1.3rem;
-            font-weight: 600;
-            color: #2c3e50;
-            margin-bottom: 6px;
-            line-height: 1.4;
-        }
+    h1{
+      font-size: 2.15rem;
+      font-weight: 800;
+      letter-spacing: .2px;
+      color: #111827;
+    }
 
-        .task-meta {
-            display: flex;
-            align-items: center;
-            font-size: 0.9rem;
-            color: #95a5a6;
-        }
+    .subtitle{
+      text-align:center;
+      color: var(--muted);
+      font-size: 1.05rem;
+      max-width: 640px;
+      margin: 0 auto;
+    }
 
-        .task-meta i {
-            margin-right: 6px;
-            font-size: 0.95rem;
-        }
+    .meta-row{
+      margin-top: 14px;
+      display:flex;
+      justify-content:center;
+      gap:10px;
+      flex-wrap: wrap;
+    }
 
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
-        }
+    .chip{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(17, 24, 39, 0.03);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: .92rem;
+    }
 
-        .empty-state i {
-            font-size: 4rem;
-            color: #bdc3c7;
-            margin-bottom: 20px;
-        }
+    .chip i{ color: rgba(41, 128, 185, 0.95); }
 
-        .empty-state h2 {
-            font-size: 1.8rem;
-            color: #7f8c8d;
-            margin-bottom: 12px;
-        }
+    .task-grid{
+      display:grid;
+      gap: 14px;
+      margin-top: 14px;
+    }
 
-        .empty-state p {
-            color: #95a5a6;
-            max-width: 500px;
-            margin: 0 auto;
-        }
+    .task-card{
+      background: var(--card);
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      box-shadow: 0 6px 18px rgba(17, 24, 39, 0.05);
+      padding: 18px 18px;
+      text-decoration: none;
+      color: inherit;
+      display:flex;
+      align-items:center;
+      gap: 16px;
+      transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+      position: relative;
+      outline: none;
+    }
 
-        footer {
-            text-align: center;
-            margin-top: 40px;
-            color: #95a5a6;
-            font-size: 0.95rem;
-        }
+    .task-card:hover{
+      transform: translateY(-2px);
+      border-color: rgba(41, 128, 185, 0.55);
+      box-shadow: var(--shadowHover);
+    }
 
-        @media (max-width: 600px) {
-            header {
-                padding: 30px 15px;
-            }
-            h1 {
-                font-size: 2rem;
-            }
-            .task-card {
-                padding: 16px;
-            }
-            .task-icon {
-                width: 40px;
-                height: 40px;
-                font-size: 18px;
-                margin-right: 16px;
-            }
-            .task-info h2 {
-                font-size: 1.15rem;
-            }
-        }
-    </style>
+    .task-card:focus-visible{
+      box-shadow: 0 0 0 4px rgba(41, 128, 185, 0.18), var(--shadow);
+      border-color: rgba(41, 128, 185, 0.70);
+    }
+
+    .task-icon{
+      width: 46px;
+      height: 46px;
+      border-radius: 14px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color: #fff;
+      background: linear-gradient(135deg, var(--accent1), var(--accent2));
+      flex: 0 0 auto;
+    }
+
+    .task-info{
+      min-width: 0;
+      flex: 1;
+    }
+
+    .task-info h2{
+      font-size: 1.18rem;
+      font-weight: 700;
+      color: #111827;
+      line-height: 1.35;
+      margin-bottom: 8px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .task-meta{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      color: var(--muted);
+      font-size: .92rem;
+      flex-wrap: wrap;
+    }
+
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(41, 128, 185, 0.07);
+      color: #6b7280;
+    }
+
+    .pill i{ color: rgba(41, 128, 185, 0.95); }
+
+    .chev{
+      color: rgba(17, 24, 39, 0.35);
+      flex: 0 0 auto;
+      margin-left: 4px;
+    }
+
+    .empty-state{
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+      padding: 56px 22px;
+      text-align:center;
+      margin-top: 14px;
+    }
+
+    .empty-state .big{
+      width: 74px;
+      height: 74px;
+      border-radius: 22px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      margin-bottom: 18px;
+      background: rgba(41, 128, 185, 0.08);
+      color: rgba(41, 128, 185, 0.98);
+    }
+
+    .empty-state h2{
+      font-size: 1.6rem;
+      margin-bottom: 10px;
+      color: #374151;
+      font-weight: 800;
+    }
+
+    .empty-state p{
+      color: var(--muted);
+      max-width: 560px;
+      margin: 0 auto;
+    }
+
+    footer{
+      text-align:center;
+      margin-top: 34px;
+      color: rgba(107, 114, 128, 0.95);
+      font-size: .95rem;
+    }
+
+    @media (max-width: 640px){
+      body{ padding: 14px; }
+      header{ padding: 28px 16px 22px; }
+      h1{ font-size: 1.75rem; }
+      .task-card{ padding: 16px 14px; }
+      .task-info h2{ font-size: 1.08rem; }
+      .task-icon{ width: 42px; height: 42px; border-radius: 13px; }
+    }
+  </style>
 </head>
+
 <body>
-    <div class="container">
-        <header>
-            <h1><i class="fas fa-microphone-alt"></i> 托福口语 Task4 题库</h1>
-            <p class="subtitle">纯学术讲座 · 概念+例子 · 总结型综合口语</p>
-        </header>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <span class="brand-badge" aria-hidden="true"><i class="fas fa-microphone-alt"></i></span>
+        <h1>托福口语 Task4 题库</h1>
+      </div>
 
+      <p class="subtitle">纯学术讲座 · 概念 + 例子 · 总结型综合口语</p>
+
+      <div class="meta-row" aria-label="page meta">
+        <span class="chip"><i class="fas fa-layer-group"></i> Task4</span>
         {% if tasks %}
-            <div class="task-grid">
-                {% for task in tasks %}
-                    <a href="{% url 'spoken_ai:show_task4' task.id %}" class="task-card">
-                        <div class="task-icon">
-                            <i class="fas fa-university"></i>
-                        </div>
-                        <div class="task-info">
-                            <h2>{{ task.name }}</h2>
-                            <div class="task-meta">
-                                <i class="fas fa-tag"></i>
-                                {% if task.category %}
-                                    {{ task.category.name }}
-                                {% else %}
-                                    学术讲座题
-                                {% endif %}
-                            </div>
-                        </div>
-                    </a>
-                {% endfor %}
-            </div>
-        {% else %}
-            <div class="empty-state">
-                <i class="fas fa-inbox"></i>
-                <h2>暂无 Task4 任务数据</h2>
-                <p>请先通过管理后台或数据导入脚本添加托福 Task4（学术讲座）综合口语练习题目。</p>
-            </div>
+          <span class="chip"><i class="fas fa-list-check"></i> 共 {{ tasks|length }} 题</span>
         {% endif %}
+      </div>
+    </header>
 
-        <footer>
-            <p>© 2025 TOEFL Speaking Practice Platform</p>
-        </footer>
-    </div>
+    {% if tasks %}
+      <div class="task-grid" role="list">
+        {% for task in tasks %}
+          <a href="{% url 'spoken_ai:show_task4' task.id %}" class="task-card" role="listitem">
+            <div class="task-icon" aria-hidden="true">
+              <i class="fas fa-university"></i>
+            </div>
+
+            <div class="task-info">
+              <h2 title="{{ task.name }}">{{ task.name }}</h2>
+
+              <div class="task-meta">
+                <span class="pill">
+                  <i class="fas fa-tag" aria-hidden="true"></i>
+                  {% if task.category %}
+                    {{ task.category.name }}
+                  {% else %}
+                    学术讲座题
+                  {% endif %}
+                </span>
+              </div>
+            </div>
+
+            <i class="fas fa-chevron-right chev" aria-hidden="true"></i>
+          </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <div class="big" aria-hidden="true"><i class="fas fa-inbox"></i></div>
+        <h2>暂无 Task4 任务数据</h2>
+        <p>请先通过管理后台或数据导入脚本添加托福 Task4（学术讲座）综合口语练习题目。</p>
+      </div>
+    {% endif %}
+
+    <footer>
+      <p>© 2025 TOEFL Speaking Practice Platform</p>
+    </footer>
+  </div>
 </body>
 </html>

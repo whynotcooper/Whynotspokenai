@@ -1,14 +1,9 @@
 from django.db import models
-
-# Create your models here.
-from django.db import models
+from django.utils.text import slugify
 from spoken_ai.models import UserInfoModel
 
 
 class UserProfile(models.Model):
-    """
-    可选：单独存昵称/签名等展示信息，不用继续改 db_user_info 表结构
-    """
     user = models.OneToOneField(UserInfoModel, on_delete=models.CASCADE, related_name="profile_ext")
     nickname = models.CharField(max_length=50, blank=True, default="", verbose_name="昵称")
     bio = models.CharField(max_length=200, blank=True, default="", verbose_name="个性签名")
@@ -22,9 +17,6 @@ class UserProfile(models.Model):
 
 
 class Post(models.Model):
-    """
-    小红书风格图文帖子：文字主体 + 多图
-    """
     author = models.ForeignKey(UserInfoModel, on_delete=models.CASCADE, related_name="social_posts")
     title = models.CharField(max_length=80, blank=True, default="", verbose_name="标题")
     content = models.TextField(blank=True, default="", verbose_name="正文")
@@ -48,9 +40,6 @@ class PostImage(models.Model):
     class Meta:
         db_table = "social_post_image"
         ordering = ["order", "id"]
-# social/models.py
-
-from django.utils.text import slugify
 
 
 class ForumRoom(models.Model):
@@ -64,7 +53,12 @@ class ForumRoom(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.name)
+            # 对中文字符生成拼音或UUID slug
+            slug = slugify(self.name)
+            if not slug:  # 如果slugify返回空字符串（如纯中文）
+                import uuid
+                slug = f"room-{uuid.uuid4().hex[:8]}"
+            self.slug = slug
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -74,7 +68,7 @@ class ForumRoom(models.Model):
 class ForumMessage(models.Model):
     room = models.ForeignKey(ForumRoom, on_delete=models.CASCADE, related_name="messages")
     author = models.ForeignKey(UserInfoModel, on_delete=models.SET_NULL, null=True, blank=True)
-    author_name = models.CharField(max_length=100, default="", blank=True)  # 兜底显示名
+    author_name = models.CharField(max_length=100, default="", blank=True)
     content = models.TextField(max_length=500, verbose_name="消息内容")
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -84,3 +78,37 @@ class ForumMessage(models.Model):
 
     def __str__(self):
         return f"{self.room.name} - {self.author_name or 'unknown'}"
+
+
+class PostComment(models.Model):
+    post = models.ForeignKey("Post", on_delete=models.CASCADE, related_name="comments")
+    author = models.ForeignKey(UserInfoModel, on_delete=models.SET_NULL, null=True, blank=True)
+    author_name = models.CharField(max_length=100, default="", blank=True)
+    content = models.TextField(max_length=500)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "social_post_comment"
+        ordering = ["created_at"]
+
+    def __str__(self):
+        return f"{self.post_id} - {self.author_name[:20]}"
+
+class LobbyMessage(models.Model):
+    author = models.ForeignKey(
+        UserInfoModel,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="lobby_messages"
+    )
+    author_name = models.CharField(max_length=100, default="", blank=True)
+    text = models.CharField(max_length=300)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "social_lobby_message"
+        ordering = ["created_at"]
+
+    def __str__(self):
+        return f"{self.author_name}: {self.text[:30]}"

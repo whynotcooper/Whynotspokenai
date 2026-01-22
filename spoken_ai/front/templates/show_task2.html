@@ -7,11 +7,7 @@
     <title>{{ task.name }} | TOEFL Task2</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
@@ -22,10 +18,7 @@
             min-height: 100vh;
         }
 
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-        }
+        .container { max-width: 900px; margin: 0 auto; }
 
         header {
             text-align: center;
@@ -41,18 +34,12 @@
         header::before {
             content: "";
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 6px;
+            top: 0; left: 0;
+            width: 100%; height: 6px;
             background: linear-gradient(90deg, #e74c3c, #c0392b, #e67e22);
         }
 
-        h1 {
-            font-size: 2rem;
-            color: #2c3e50;
-            margin-bottom: 12px;
-        }
+        h1 { font-size: 2rem; color: #2c3e50; margin-bottom: 12px; }
 
         .section {
             background: white;
@@ -71,9 +58,7 @@
             gap: 10px;
         }
 
-        .section h2 i {
-            color: #e74c3c;
-        }
+        .section h2 i { color: #e74c3c; }
 
         .section-content {
             background: #f8fafc;
@@ -86,13 +71,8 @@
             line-height: 1.7;
         }
 
-        .audio-player {
-            margin-top: 12px;
-        }
-
-        .hidden-content {
-            display: none;
-        }
+        .audio-player { margin-top: 12px; }
+        .hidden-content { display: none; }
 
         .btn {
             background: linear-gradient(135deg, #3498db, #2980b9);
@@ -107,23 +87,12 @@
             gap: 8px;
             transition: opacity 0.2s;
         }
+        .btn:hover { opacity: 0.9; }
 
-        .btn:hover {
-            opacity: 0.9;
-        }
+        .btn-reveal { margin-top: 16px; background: linear-gradient(135deg, #2ecc71, #27ae60); }
 
-        .btn-reveal {
-            margin-top: 16px;
-            background: linear-gradient(135deg, #2ecc71, #27ae60);
-        }
-
-        .btn-secondary {
-            background: #7f8c8d;
-        }
-
-        .btn-secondary:hover {
-            background: #95a5a6;
-        }
+        .btn-secondary { background: #7f8c8d; }
+        .btn-secondary:hover { background: #95a5a6; }
 
         .back-link {
             display: inline-block;
@@ -132,21 +101,11 @@
             text-decoration: none;
             font-weight: 600;
         }
+        .back-link:hover { color: #3498db; text-decoration: underline; }
 
-        .back-link:hover {
-            color: #3498db;
-            text-decoration: underline;
-        }
+        .hidden { display: none; }
 
-        .hidden {
-            display: none;
-        }
-
-        .timer {
-            font-weight: bold;
-            color: #e74c3c;
-            margin-left: 10px;
-        }
+        .timer { font-weight: bold; color: #e74c3c; margin-left: 10px; }
 
         textarea {
             width: 100%;
@@ -160,305 +119,597 @@
             background: #f8fafc;
         }
 
-        #feedbackContent p {
-            margin-bottom: 8px;
-        }
+        #feedbackContent p { margin-bottom: 8px; }
 
-        #pdfLink {
-            text-decoration: none;
-            color: #2980b9;
+        #pdfLink { text-decoration: none; color: #2980b9; font-weight: 600; }
+        #pdfLink:hover { text-decoration: underline; }
+
+        /* ✅ 追加：Task1 风格的评分展示样式（用于更好地显示 feedback） */
+        .score-row { display: flex; gap: 12px; flex-wrap: wrap; margin: 10px 0 0; }
+        .score-badge {
+            background: #ecf5ff;
+            border: 1px solid #cfe6ff;
+            color: #1f6fb2;
+            padding: 8px 10px;
+            border-radius: 8px;
             font-weight: 600;
         }
-
-        #pdfLink:hover {
-            text-decoration: underline;
+        .dim-card {
+            border: 1px solid #eee;
+            border-radius: 12px;
+            padding: 14px;
+            margin: 12px 0;
+            background: #fff;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
         }
+        .dim-title { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+        .dim-title h3 { margin: 0; color: #2c3e50; font-size: 18px; }
+        .dim-score {
+            background: #fff6e6;
+            border: 1px solid #ffe2b3;
+            color: #a35b00;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-weight: 700;
+            font-size: 13px;
+        }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #eee; padding: 10px; vertical-align: top; }
+        th { background: #fafafa; color: #2c3e50; text-align: left; }
+        .mini-note { color: #7f8c8d; font-size: 13px; margin-top: 6px; }
+        .list { margin: 8px 0 0 18px; }
+        .list li { margin: 6px 0; }
 
         @media (max-width: 600px) {
-            .section {
-                padding: 18px;
-            }
-            h1 {
-                font-size: 1.7rem;
-            }
-            .section h2 {
-                font-size: 1.25rem;
-            }
+            .section { padding: 18px; }
+            h1 { font-size: 1.7rem; }
+            .section h2 { font-size: 1.25rem; }
         }
     </style>
 </head>
+
 <body>
-    <div class="container">
-        <header>
-            <h1><i class="fas fa-headphones"></i> {{ task.name }}</h1>
-        </header>
+<div class="container">
+    <header>
+        <h1><i class="fas fa-headphones"></i> {{ task.name }}</h1>
+    </header>
 
-        <!-- 阅读文本 -->
-        <div class="section">
-            <h2><i class="fas fa-book"></i> 阅读文本（校园公告）</h2>
-            <div class="section-content">
-                {{ task.readingtext|default:"无阅读内容" }}
-            </div>
+    <!-- 阅读文本 -->
+    <div class="section">
+        <h2><i class="fas fa-book"></i> 阅读文本（校园公告）</h2>
+        <div class="section-content">
+            {{ task.readingtext|default:"无阅读内容" }}
         </div>
-
-        <!-- 问题 -->
-        <div class="section">
-            <h2><i class="fas fa-question-circle"></i> 问题</h2>
-            <div class="section-content">
-                {{ task.questiontext|default:"无问题描述" }}
-            </div>
-        </div>
-
-        <!-- 听力音频 -->
-        <div class="section">
-            <h2><i class="fas fa-headphones"></i> 听力材料</h2>
-            <div class="audio-player">
-                {% if task.audio %}
-                    <audio controls style="width: 100%; height: 50px;">
-                        <source src="{{ task.audio.url }}" type="audio/mp4">
-                        <source src="{{ task.audio.url }}" type="audio/mpeg">
-                        您的浏览器不支持音频播放。
-                    </audio>
-                {% else %}
-                    <p style="color: #e74c3c;">⚠️ 未上传听力音频</p>
-                {% endif %}
-            </div>
-        </div>
-
-        <!-- 录音与作答 -->
-        <div class="section" id="recordSection">
-            <h2><i class="fas fa-microphone"></i> 请回答（60秒）</h2>
-            <p>点击“开始录音”后，你有 60 秒时间作答本题。</p>
-            <button id="startBtn" class="btn"><i class="fas fa-record-vinyl"></i> 开始录音</button>
-            <span id="timer" class="timer hidden">剩余: <span id="countdown">60</span> 秒</span>
-            <button id="stopBtn" class="btn btn-secondary hidden">提前结束</button>
-            <div id="recordStatus" style="margin-top: 10px;"></div>
-        </div>
-
-        <!-- 转写文本编辑区 -->
-        <div class="section hidden" id="editSection">
-            <h2><i class="fas fa-keyboard"></i> 你的回答（可编辑）</h2>
-            <textarea id="transcriptionText" placeholder="语音转写结果将显示在这里..."></textarea>
-            <br><br>
-            <button id="confirmBtn" class="btn">
-                <i class="fas fa-wand-magic-sparkles"></i> 确认最终答案并生成报告
-            </button>
-        </div>
-
-        <!-- AI 反馈 + PDF 下载 -->
-        <div class="section hidden" id="feedbackSection">
-            <h2><i class="fas fa-chart-line"></i> AI 评分报告</h2>
-            <div id="feedbackContent"></div>
-            <br>
-            <a id="pdfLink" target="_blank" style="display:none;">📥 下载 PDF 报告</a>
-            <br><br>
-            <button id="followupBtn" class="btn btn-secondary hidden">
-                <i class="fas fa-comments"></i> 进入追问与精讲
-            </button>
-        </div>
-
-        <!-- 参考答案与思路 -->
-        <div class="section">
-            <button id="toggleAnswersBtn" class="btn btn-reveal">
-                <i class="fas fa-eye"></i> 显示参考答案与解题思路
-            </button>
-
-            <div id="hiddenAnswers" class="hidden-content">
-                <h2><i class="fas fa-lightbulb"></i> 参考答案1</h2>
-                <div class="section-content">
-                    {{ task.answertext1|default:"无答案" }}
-                </div>
-
-                <h2 style="margin-top: 20px;"><i class="fas fa-lightbulb"></i> 参考答案2</h2>
-                <div class="section-content">
-                    {{ task.answertext2|default:"无答案" }}
-                </div>
-
-                <h2 style="margin-top: 20px;"><i class="fas fa-graduation-cap"></i> 解题思路</h2>
-                <div class="section-content">
-                    {{ task.reasontext|default:"无解题思路" }}
-                </div>
-                <h2 style="margin-top: 20px;"><i class="fas fa-headphones"></i> 听力文本</h2>
-               <div class="section-content">
-                     {{ task.listeningtext|default:"无听力文本" }}
-              </div>
-
-                
-            </div>
-        </div>
-
-        <a href="{% url 'spoken_ai:task2_list' %}" class="back-link">
-            ← 返回 Task2 题库列表
-        </a>
     </div>
 
-    <script>
-        let mediaRecorder;
-        let audioChunks = [];
-        let countdownInterval = null;
-        const task_id = {{ task.id }};
+    <!-- 问题 -->
+    <div class="section">
+        <h2><i class="fas fa-question-circle"></i> 问题</h2>
+        <div class="section-content">
+            {{ task.questiontext|default:"无问题描述" }}
+        </div>
+    </div>
 
-        document.getElementById('startBtn').addEventListener('click', startRecording);
-        document.getElementById('stopBtn').addEventListener('click', stopRecording);
-        document.getElementById('confirmBtn').addEventListener('click', confirmAnswer);
-        document.getElementById('toggleAnswersBtn').addEventListener('click', toggleAnswers);
+    <!-- 听力音频 -->
+    <div class="section">
+        <h2><i class="fas fa-headphones"></i> 听力材料</h2>
+        <div class="audio-player">
+            {% if task.audio %}
+                <audio controls style="width: 100%; height: 50px;">
+                    <source src="{{ task.audio.url }}" type="audio/mp4">
+                    <source src="{{ task.audio.url }}" type="audio/mpeg">
+                    您的浏览器不支持音频播放。
+                </audio>
+            {% else %}
+                <p style="color: #e74c3c;">⚠️ 未上传听力音频</p>
+            {% endif %}
+        </div>
+    </div>
 
-        function startRecording() {
-            navigator.mediaDevices.getUserMedia({ audio: true })
-                .then(stream => {
-                    mediaRecorder = new MediaRecorder(stream);
-                    audioChunks = [];
+    <!-- 录音与作答 -->
+    <div class="section" id="recordSection">
+        <h2><i class="fas fa-microphone"></i> 请回答（60秒）</h2>
+        <p>点击“开始录音”后，你有 60 秒时间作答本题。</p>
+        <button id="startBtn" class="btn"><i class="fas fa-record-vinyl"></i> 开始录音</button>
+        <span id="timer" class="timer hidden">剩余: <span id="countdown">60</span> 秒</span>
+        <button id="stopBtn" class="btn btn-secondary hidden">提前结束</button>
+        <div id="recordStatus" style="margin-top: 10px;"></div>
+    </div>
 
-                    mediaRecorder.ondataavailable = event => {
-                        audioChunks.push(event.data);
-                    };
+    <!-- 转写文本编辑区 -->
+    <div class="section hidden" id="editSection">
+        <h2><i class="fas fa-keyboard"></i> 你的回答（可编辑）</h2>
+        <textarea id="transcriptionText" placeholder="语音转写结果将显示在这里..."></textarea>
+        <br><br>
+        <button id="confirmBtn" class="btn">
+            <i class="fas fa-wand-magic-sparkles"></i> 确认最终答案并生成报告
+        </button>
+    </div>
 
-                    mediaRecorder.onstop = () => {
-                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                        uploadAudio(audioBlob);
-                        stream.getTracks().forEach(track => track.stop());
-                    };
+    <!-- AI 反馈 + PDF 下载 -->
+    <div class="section hidden" id="feedbackSection">
+        <h2><i class="fas fa-chart-line"></i> AI 评分报告</h2>
+        <div id="feedbackContent"></div>
+        <br>
+        <a id="pdfLink" target="_blank" style="display:none;">📥 下载 PDF 报告</a>
+        <br><br>
+        <button id="followupBtn" class="btn btn-secondary hidden">
+            <i class="fas fa-comments"></i> 进入追问与精讲
+        </button>
+    </div>
 
-                    mediaRecorder.start();
-                    document.getElementById('startBtn').classList.add('hidden');
-                    document.getElementById('timer').classList.remove('hidden');
-                    document.getElementById('stopBtn').classList.remove('hidden');
-                    document.getElementById('recordStatus').innerText = '正在录音...';
+    <!-- 参考答案与思路 -->
+    <div class="section">
+        <button id="toggleAnswersBtn" class="btn btn-reveal">
+            <i class="fas fa-eye"></i> 显示参考答案与解题思路
+        </button>
 
-                    // 60秒倒计时（Task2 回答时间）
-                    let timeLeft = 60;
+        <div id="hiddenAnswers" class="hidden-content">
+            <h2><i class="fas fa-lightbulb"></i> 参考答案1</h2>
+            <div class="section-content">
+                {{ task.answertext1|default:"无答案" }}
+            </div>
+
+            <h2 style="margin-top: 20px;"><i class="fas fa-lightbulb"></i> 参考答案2</h2>
+            <div class="section-content">
+                {{ task.answertext2|default:"无答案" }}
+            </div>
+
+            <h2 style="margin-top: 20px;"><i class="fas fa-graduation-cap"></i> 解题思路</h2>
+            <div class="section-content">
+                {{ task.reasontext|default:"无解题思路" }}
+            </div>
+
+            <h2 style="margin-top: 20px;"><i class="fas fa-headphones"></i> 听力文本</h2>
+            <div class="section-content">
+                {{ task.listeningtext|default:"无听力文本" }}
+            </div>
+        </div>
+    </div>
+
+    <a href="{% url 'spoken_ai:task2_list' %}" class="back-link">
+        ← 返回 Task2 题库列表
+    </a>
+</div>
+
+<script>
+    let mediaRecorder;
+    let audioChunks = [];
+    let countdownInterval = null;
+    const task_id = {{ task.id }};
+
+    document.getElementById('startBtn').addEventListener('click', startRecording);
+    document.getElementById('stopBtn').addEventListener('click', stopRecording);
+    document.getElementById('confirmBtn').addEventListener('click', confirmAnswer);
+    document.getElementById('toggleAnswersBtn').addEventListener('click', toggleAnswers);
+
+    /* ✅ Task1 同款安全渲染工具（防 XSS、兼容数组/字符串） */
+    function escapeHtml(str) {
+        if (str === null || str === undefined) return '';
+        return String(str)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    function safeArray(x) {
+        if (!x) return [];
+        return Array.isArray(x) ? x : [x];
+    }
+
+    function prettyDimName(dim) {
+        const map = {
+            delivery: "Delivery（表达）",
+            language_use: "Language Use（语言）",
+            topic_development: "Topic Development（内容）"
+        };
+        return map[dim] || dim;
+    }
+
+    function renderDimensionFeedback(dimKey, dimObj) {
+        const score = dimObj?.score ?? 'N/A';
+        const problems = safeArray(dimObj?.problems);
+        const evidence = safeArray(dimObj?.evidence);
+        const fixes = safeArray(dimObj?.fixes);
+
+        const maxLen = Math.max(problems.length, evidence.length, fixes.length, 1);
+
+        let rows = '';
+        for (let i = 0; i < maxLen; i++) {
+            rows += `
+                <tr>
+                    <td>${escapeHtml(problems[i] ?? '')}</td>
+                    <td>${escapeHtml(evidence[i] ?? '')}</td>
+                    <td>${escapeHtml(fixes[i] ?? '')}</td>
+                </tr>
+            `;
+        }
+
+        return `
+            <div class="dim-card">
+                <div class="dim-title">
+                    <h3>${escapeHtml(prettyDimName(dimKey))}</h3>
+                    <span class="dim-score">Score: ${escapeHtml(score)}</span>
+                </div>
+                <div class="mini-note">每条建议都对应「问题 → 证据 → 改进」；即使高分也会给高级优化点。</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 34%;">Problems / Improvements</th>
+                            <th style="width: 33%;">Evidence（证据）</th>
+                            <th style="width: 33%;">Fixes（怎么改）</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+
+    function renderWordsTable(items, title) {
+        const arr = safeArray(items);
+        let rows = '';
+        arr.forEach(it => {
+            rows += `
+                <tr>
+                    <td>${escapeHtml(it?.en ?? '')}</td>
+                    <td>${escapeHtml(it?.zh ?? '')}</td>
+                </tr>
+            `;
+        });
+
+        return `
+            <div class="dim-card">
+                <div class="dim-title">
+                    <h3>${escapeHtml(title)}</h3>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 35%;">English</th>
+                            <th>中文释义</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows || `<tr><td colspan="2">无</td></tr>`}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+
+    function renderSentences(items) {
+        const arr = safeArray(items);
+        const lis = arr.map(s => `<li>${escapeHtml(s)}</li>`).join('');
+        return `
+            <div class="dim-card">
+                <div class="dim-title">
+                    <h3>Recommended Sentences（推荐句子）</h3>
+                </div>
+                <ol class="list">
+                    ${lis || '<li>无</li>'}
+                </ol>
+            </div>
+        `;
+    }
+
+    function normalizeCorrection(correction) {
+        if (correction === null || correction === undefined) return '';
+        if (typeof correction === 'string') return correction;
+        if (typeof correction === 'object') {
+            return (correction.text || correction.answer || correction.content || JSON.stringify(correction)) + '';
+        }
+        return String(correction);
+    }
+
+    function renderCorrection(correction) {
+        const text = normalizeCorrection(correction).trim();
+        return `
+            <div class="dim-card">
+                <div class="dim-title">
+                    <h3>Correction（改写后优秀答案）</h3>
+                </div>
+                <p style="background:#f9f9f9;padding:12px;border-left:4px solid #2ecc71;white-space:pre-wrap;word-wrap:break-word;margin-top:10px;">
+                    ${escapeHtml(text || '无')}
+                </p>
+                <div class="mini-note">基于你的回答做更地道、更高分的改写版本（可直接背诵/复述）。</div>
+            </div>
+        `;
+    }
+
+    /* ✅ 兼容 Task1/Task2 两种 feedback 格式的统一渲染器 */
+    function renderFeedback(feedback) {
+        if (!feedback || typeof feedback !== 'object') {
+            return `<p>反馈格式异常：无法解析。</p>`;
+        }
+
+        // ---- A) Task1 风格（有 dimension_feedback）----
+        if (feedback.dimension_feedback || feedback.dimension_scores || feedback.overall_score !== undefined) {
+            const overall = feedback.overall_score ?? 'N/A';
+            const ds = feedback.dimension_scores || {};
+            const df = feedback.dimension_feedback || {};
+
+            let html = `
+                <div class="score-row">
+                    <div class="score-badge">Overall Score: ${escapeHtml(overall)}</div>
+                    <div class="score-badge">Delivery: ${escapeHtml(ds.delivery ?? 'N/A')}</div>
+                    <div class="score-badge">Language Use: ${escapeHtml(ds.language_use ?? 'N/A')}</div>
+                    <div class="score-badge">Topic Dev: ${escapeHtml(ds.topic_development ?? 'N/A')}</div>
+                </div>
+            `;
+
+            ["delivery", "language_use", "topic_development"].forEach(dim => {
+                html += renderDimensionFeedback(dim, df?.[dim] || {});
+            });
+
+            if (feedback.correction !== undefined && feedback.correction !== null) {
+                html += renderCorrection(feedback.correction);
+            }
+
+            if (feedback.recommended_words !== undefined) {
+                html += renderWordsTable(feedback.recommended_words, "Recommended Words（推荐词汇）");
+            }
+            if (feedback.recommended_phrases !== undefined) {
+                html += renderWordsTable(feedback.recommended_phrases, "Recommended Phrases（推荐短语）");
+            }
+            if (feedback.recommended_sentences !== undefined) {
+                html += renderSentences(feedback.recommended_sentences);
+            }
+
+            return html;
+        }
+
+        // ---- B) Task2 当前风格（score/issues/reason/answer/phrases/sentences）----
+        const score = feedback.score ?? 'N/A';
+        const issues = feedback.issues ?? '';
+        const reason = feedback.reason ?? '';
+        const answer = feedback.answer ?? '';
+        const phrases = safeArray(feedback.phrases).filter(Boolean);
+        const sentences = feedback.sentences ?? '';
+
+        let html = `
+            <div class="score-row">
+                <div class="score-badge">Score: ${escapeHtml(score)}</div>
+            </div>
+
+            <div class="dim-card">
+                <div class="dim-title">
+                    <h3>Issues（问题）</h3>
+                </div>
+                <p style="background:#f8fafc;padding:12px;border-left:4px solid #e74c3c;white-space:pre-wrap;word-wrap:break-word;margin-top:10px;">
+                    ${escapeHtml(issues || '无')}
+                </p>
+            </div>
+
+            <div class="dim-card">
+                <div class="dim-title">
+                    <h3>Suggestions（建议）</h3>
+                </div>
+                <p style="background:#f8fafc;padding:12px;border-left:4px solid #3498db;white-space:pre-wrap;word-wrap:break-word;margin-top:10px;">
+                    ${escapeHtml(reason || '无')}
+                </p>
+            </div>
+
+            <div class="dim-card">
+                <div class="dim-title">
+                    <h3>Reference Answer（参考答案）</h3>
+                </div>
+                <p style="background:#f8fafc;padding:12px;border-left:4px solid #2ecc71;white-space:pre-wrap;word-wrap:break-word;margin-top:10px;">
+                    ${escapeHtml(answer || '无')}
+                </p>
+            </div>
+        `;
+
+        if (phrases.length) {
+            html += `
+                <div class="dim-card">
+                    <div class="dim-title">
+                        <h3>Recommended Phrases（推荐短语）</h3>
+                    </div>
+                    <p class="mini-note">可优先挑 2–3 个融入回答。</p>
+                    <p style="background:#f9f9f9;padding:12px;border-left:4px solid #e67e22;white-space:pre-wrap;word-wrap:break-word;margin-top:10px;">
+                        ${escapeHtml(phrases.join(', '))}
+                    </p>
+                </div>
+            `;
+        }
+
+        // sentences 兼容：可能是数组/字符串
+        const sentenceArr = Array.isArray(sentences) ? sentences : (sentences ? [sentences] : []);
+        if (sentenceArr.length) {
+            html += renderSentences(sentenceArr);
+        }
+
+        return html;
+    }
+
+    /* ✅ followup 打包：兼容 Task1/Task2 两种结构 */
+    function buildFollowupText(feedback) {
+        // Task1 风格
+        if (feedback && (feedback.dimension_feedback || feedback.dimension_scores)) {
+            const df = feedback?.dimension_feedback || {};
+            const dims = ["delivery", "language_use", "topic_development"];
+
+            let issues = [];
+            let reasons = [];
+
+            dims.forEach(dim => {
+                const problems = safeArray(df?.[dim]?.problems);
+                const fixes = safeArray(df?.[dim]?.fixes);
+
+                problems.slice(0, 2).forEach(p => issues.push(`[${prettyDimName(dim)}] ${p}`));
+                fixes.slice(0, 2).forEach(f => reasons.push(`[${prettyDimName(dim)}] ${f}`));
+            });
+
+            const correctionText = normalizeCorrection(feedback?.correction).trim();
+
+            return {
+                issues: issues.join('\n'),
+                reason: reasons.join('\n'),
+                answer: correctionText || ''
+            };
+        }
+
+        // Task2 风格
+        return {
+            issues: (feedback?.issues ?? '') + '',
+            reason: (feedback?.reason ?? '') + '',
+            answer: (feedback?.answer ?? '') + ''
+        };
+    }
+
+    function startRecording() {
+        navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(stream => {
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+
+                mediaRecorder.ondataavailable = event => {
+                    audioChunks.push(event.data);
+                };
+
+                mediaRecorder.onstop = () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    uploadAudio(audioBlob);
+                    stream.getTracks().forEach(track => track.stop());
+                };
+
+                mediaRecorder.start();
+                document.getElementById('startBtn').classList.add('hidden');
+                document.getElementById('timer').classList.remove('hidden');
+                document.getElementById('stopBtn').classList.remove('hidden');
+                document.getElementById('recordStatus').innerText = '正在录音...';
+
+                let timeLeft = 60;
+                document.getElementById('countdown').innerText = timeLeft;
+                countdownInterval = setInterval(() => {
+                    timeLeft--;
                     document.getElementById('countdown').innerText = timeLeft;
-                    countdownInterval = setInterval(() => {
-                        timeLeft--;
-                        document.getElementById('countdown').innerText = timeLeft;
-                        if (timeLeft <= 0) {
-                            stopRecording();
-                        }
-                    }, 1000);
-                })
-                .catch(err => {
-                    document.getElementById('recordStatus').innerText = '录音失败: ' + err.message;
-                });
-        }
-
-        function stopRecording() {
-            if (countdownInterval) {
-                clearInterval(countdownInterval);
-                countdownInterval = null;
-            }
-            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-                mediaRecorder.stop();
-            }
-        }
-
-        function uploadAudio(blob) {
-            const formData = new FormData();
-            formData.append('audio', blob, 'answer.webm');
-
-            // 和 Task1 一样，用相对路径，假设后端 URL 形如 /task2/<id>/process_task_audio/
-            fetch(`process_task_audio/`, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-CSRFToken': '{{ csrf_token }}'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    document.getElementById('transcriptionText').value = data.transcription;
-                    document.getElementById('editSection').classList.remove('hidden');
-                    document.getElementById('recordSection').classList.add('hidden');
-                } else {
-                    alert('语音处理失败: ' + data.error);
-                }
+                    if (timeLeft <= 0) {
+                        stopRecording();
+                    }
+                }, 1000);
             })
             .catch(err => {
-                console.error(err);
-                alert('上传失败');
+                document.getElementById('recordStatus').innerText = '录音失败: ' + err.message;
             });
+    }
+
+    function stopRecording() {
+        if (countdownInterval) {
+            clearInterval(countdownInterval);
+            countdownInterval = null;
         }
-
-        function confirmAnswer() {
-            const finalText = document.getElementById('transcriptionText').value.trim();
-            if (!finalText) {
-                alert('请输入你的回答');
-                return;
-            }
-
-            // 调用 Task2 的分析接口，形如 /task2/<id>/analyse_task2/
-            fetch(`analyse_task2/`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': '{{ csrf_token }}'
-                },
-                body: JSON.stringify({ student_answer: finalText })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // 1. 显示评分报告
-                    let html = `<p><strong>评分:</strong> ${data.feedback.score || 'N/A'}</p>`;
-                    html += `<p><strong>问题:</strong> ${data.feedback.issues || ''}</p>`;
-                    html += `<p><strong>建议:</strong> ${data.feedback.reason || ''}</p>`;
-                    html += `<p><strong>参考答案:</strong> ${data.feedback.answer || ''}</p>`;
-                    if (data.feedback.phrases) {
-                        html += `<p><strong>推荐短语:</strong> ${data.feedback.phrases.join(', ')}</p>`;
-                    }
-                    html += `<p><strong>推荐句子:</strong> ${data.feedback.sentences || ''}</p>`;
-                    document.getElementById('feedbackContent').innerHTML = html;
-
-                    // 2. 显示 PDF 链接（如果有）
-                    if (data.pdf_url) {
-                        const link = document.getElementById('pdfLink');
-                        link.href = data.pdf_url;
-                        link.style.display = 'inline';
-                    }
-
-                    // 显示评分区域
-                    document.getElementById('feedbackSection').classList.remove('hidden');
-
-                    // 3. 显示通用 followup 跳转按钮
-                    const followupBtn = document.getElementById('followupBtn');
-                    followupBtn.classList.remove('hidden');
-
-                    followupBtn.onclick = function () {
-                        const baseUrl = "{% url 'spoken_ai:followup' %}";
-
-                        const params = new URLSearchParams({
-                            task_name: "{{ task.name|default:''|escapejs }}",
-                            readingtext: "{{ task.readingtext|default:''|escapejs }}",
-                            questiontext: "{{ task.questiontext|default:''|escapejs }}",
-                            student_answer: finalText,
-                            issues: data.feedback.issues || '',
-                            reason: data.feedback.reason || '',
-                            answer: data.feedback.answer || ''
-                        });
-
-                        window.location.href = baseUrl + "?" + params.toString();
-                    };
-                } else {
-                    alert('分析失败: ' + data.error);
-                }
-            })
-            .catch(err => {
-                console.error(err);
-                alert('提交失败');
-            });
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+            mediaRecorder.stop();
         }
+    }
 
-        function toggleAnswers() {
-            const hiddenDiv = document.getElementById('hiddenAnswers');
-            const btn = document.getElementById('toggleAnswersBtn');
-            if (hiddenDiv.style.display === 'none' || hiddenDiv.style.display === '') {
-                hiddenDiv.style.display = 'block';
-                btn.innerHTML = '<i class="fas fa-eye-slash"></i> 隐藏参考答案';
+    function uploadAudio(blob) {
+        const formData = new FormData();
+        formData.append('audio', blob, 'answer.webm');
+
+        fetch(`process_task_audio/`, {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('transcriptionText').value = data.transcription;
+                document.getElementById('editSection').classList.remove('hidden');
+                document.getElementById('recordSection').classList.add('hidden');
             } else {
-                hiddenDiv.style.display = 'none';
-                btn.innerHTML = '<i class="fas fa-eye"></i> 显示参考答案与解题思路';
+                alert('语音处理失败: ' + data.error);
             }
+        })
+        .catch(err => {
+            console.error(err);
+            alert('上传失败');
+        });
+    }
+
+    function confirmAnswer() {
+        const finalText = document.getElementById('transcriptionText').value.trim();
+        if (!finalText) {
+            alert('请输入你的回答');
+            return;
         }
-    </script>
+
+        fetch(`analyse_task2/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ student_answer: finalText })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const feedback = data.feedback || {};
+
+                // ✅ 1) 用 Task1 风格渲染（兼容 Task2 老格式）
+                document.getElementById('feedbackContent').innerHTML = renderFeedback(feedback);
+
+                // ✅ 2) PDF 链接
+                if (data.pdf_url) {
+                    const link = document.getElementById('pdfLink');
+                    link.href = data.pdf_url;
+                    link.style.display = 'inline';
+                } else {
+                    document.getElementById('pdfLink').style.display = 'none';
+                }
+
+                // ✅ 3) 显示评分区域
+                document.getElementById('feedbackSection').classList.remove('hidden');
+
+                // ✅ 4) followup 按钮（保留你 Task2 原来的参数：含 questiontext）
+                const followupBtn = document.getElementById('followupBtn');
+                followupBtn.classList.remove('hidden');
+
+                followupBtn.onclick = function () {
+                    const baseUrl = "{% url 'spoken_ai:followup' %}";
+                    const pack = buildFollowupText(feedback);
+
+                    const params = new URLSearchParams({
+                        task_name: "{{ task.name|default:''|escapejs }}",
+                        readingtext: "{{ task.readingtext|default:''|escapejs }}",
+                        questiontext: "{{ task.questiontext|default:''|escapejs }}",
+                        student_answer: finalText,
+                        issues: pack.issues || '',
+                        reason: pack.reason || '',
+                        answer: pack.answer || ''
+                    });
+
+                    window.location.href = baseUrl + "?" + params.toString();
+                };
+            } else {
+                alert('分析失败: ' + data.error);
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert('提交失败');
+        });
+    }
+
+    function toggleAnswers() {
+        const hiddenDiv = document.getElementById('hiddenAnswers');
+        const btn = document.getElementById('toggleAnswersBtn');
+        if (hiddenDiv.style.display === 'none' || hiddenDiv.style.display === '') {
+            hiddenDiv.style.display = 'block';
+            btn.innerHTML = '<i class="fas fa-eye-slash"></i> 隐藏参考答案';
+        } else {
+            hiddenDiv.style.display = 'none';
+            btn.innerHTML = '<i class="fas fa-eye"></i> 显示参考答案与解题思路';
+        }
+    }
+</script>
 </body>
 </html>

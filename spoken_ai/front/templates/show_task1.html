@@ -7,12 +7,10 @@
     <style>
         body { font-family: "Microsoft YaHei", sans-serif; margin: 40px; line-height: 1.6; }
         h1 { color: #2980b9; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+
         .section { margin: 25px 0; }
-        .section h2 {
-            color: #2c3e50;
-            font-size: 20px;
-            margin-bottom: 8px;
-        }
+        .section h2 { color: #2c3e50; font-size: 20px; margin-bottom: 8px; }
+
         .section p, .section textarea {
             background: #f9f9f9;
             padding: 12px;
@@ -22,12 +20,10 @@
             width: 100%;
             box-sizing: border-box;
         }
-        textarea {
-            border: 1px solid #ccc;
-            resize: vertical;
-            min-height: 100px;
-        }
+
+        textarea { border: 1px solid #ccc; resize: vertical; min-height: 100px; }
         .hidden { display: none; }
+
         .btn {
             padding: 8px 16px;
             margin: 5px;
@@ -40,14 +36,48 @@
         .btn:hover { background: #2980b9; }
         .btn-secondary { background: #7f8c8d; }
         .btn-secondary:hover { background: #95a5a6; }
+
         .timer { font-weight: bold; color: #e74c3c; }
-        .back {
-            display: inline-block;
-            margin-top: 20px;
-            color: #7f8c8d;
-            text-decoration: none;
-        }
+        .back { display: inline-block; margin-top: 20px; color: #7f8c8d; text-decoration: none; }
         .back:hover { text-decoration: underline; }
+
+        /* 评分展示样式 */
+        .score-row { display: flex; gap: 12px; flex-wrap: wrap; margin: 10px 0 0; }
+        .score-badge {
+            background: #ecf5ff;
+            border: 1px solid #cfe6ff;
+            color: #1f6fb2;
+            padding: 8px 10px;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+        .dim-card {
+            border: 1px solid #eee;
+            border-radius: 10px;
+            padding: 14px;
+            margin: 12px 0;
+            background: #fff;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+        }
+        .dim-title { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+        .dim-title h3 { margin: 0; color: #2c3e50; font-size: 18px; }
+        .dim-score {
+            background: #fff6e6;
+            border: 1px solid #ffe2b3;
+            color: #a35b00;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-weight: 700;
+            font-size: 13px;
+        }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #eee; padding: 10px; vertical-align: top; }
+        th { background: #fafafa; color: #2c3e50; text-align: left; }
+
+        .mini-note { color: #7f8c8d; font-size: 13px; margin-top: 6px; }
+        .list { margin: 8px 0 0 18px; }
+        .list li { margin: 6px 0; }
     </style>
 </head>
 <body>
@@ -83,7 +113,6 @@
         <div id="feedbackContent"></div>
         <br>
         <a id="pdfLink" target="_blank" style="display:none;">📥 下载 PDF 报告</a>
-        <!-- 跳转到追问页面的按钮，初始隐藏 -->
         <button id="followupBtn" class="btn btn-secondary hidden">进入追问与精讲</button>
     </div>
 
@@ -115,6 +144,205 @@
         document.getElementById('confirmBtn').addEventListener('click', confirmAnswer);
         document.getElementById('toggleAnswersBtn').addEventListener('click', toggleAnswers);
 
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function safeArray(x) {
+            if (!x) return [];
+            return Array.isArray(x) ? x : [x];
+        }
+
+        function prettyDimName(dim) {
+            const map = {
+                delivery: "Delivery（表达）",
+                language_use: "Language Use（语言）",
+                topic_development: "Topic Development（内容）"
+            };
+            return map[dim] || dim;
+        }
+
+        function renderDimensionFeedback(dimKey, dimObj) {
+            const score = dimObj?.score ?? 'N/A';
+            const problems = safeArray(dimObj?.problems);
+            const evidence = safeArray(dimObj?.evidence);
+            const fixes = safeArray(dimObj?.fixes);
+
+            const maxLen = Math.max(problems.length, evidence.length, fixes.length, 1);
+
+            let rows = '';
+            for (let i = 0; i < maxLen; i++) {
+                rows += `
+                    <tr>
+                        <td>${escapeHtml(problems[i] ?? '')}</td>
+                        <td>${escapeHtml(evidence[i] ?? '')}</td>
+                        <td>${escapeHtml(fixes[i] ?? '')}</td>
+                    </tr>
+                `;
+            }
+
+            return `
+                <div class="dim-card">
+                    <div class="dim-title">
+                        <h3>${escapeHtml(prettyDimName(dimKey))}</h3>
+                        <span class="dim-score">Score: ${escapeHtml(score)}</span>
+                    </div>
+                    <div class="mini-note">每条建议都对应「问题 → 证据 → 改进」；即使高分也会给高级优化点。</div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width: 34%;">Problems / Improvements</th>
+                                <th style="width: 33%;">Evidence（证据）</th>
+                                <th style="width: 33%;">Fixes（怎么改）</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rows}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function renderWordsTable(items, title) {
+            const arr = safeArray(items);
+            let rows = '';
+            arr.forEach(it => {
+                rows += `
+                    <tr>
+                        <td>${escapeHtml(it?.en ?? '')}</td>
+                        <td>${escapeHtml(it?.zh ?? '')}</td>
+                    </tr>
+                `;
+            });
+
+            return `
+                <div class="dim-card">
+                    <div class="dim-title">
+                        <h3>${escapeHtml(title)}</h3>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width: 35%;">English</th>
+                                <th>中文释义</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rows || `<tr><td colspan="2">无</td></tr>`}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function renderSentences(items) {
+            const arr = safeArray(items);
+            const lis = arr.map(s => `<li>${escapeHtml(s)}</li>`).join('');
+            return `
+                <div class="dim-card">
+                    <div class="dim-title">
+                        <h3>Recommended Sentences（推荐句子）</h3>
+                    </div>
+                    <ol class="list">
+                        ${lis || '<li>无</li>'}
+                    </ol>
+                    <div class="mini-note">（按你的 prompt：每句尽量包含至少一个推荐短语，且不超过 22 词）</div>
+                </div>
+            `;
+        }
+
+        // ✅ 新增：优秀改写答案（correction）
+        function normalizeCorrection(correction) {
+            if (correction === null || correction === undefined) return '';
+            if (typeof correction === 'string') return correction;
+            // 兼容对象：常见字段名
+            if (typeof correction === 'object') {
+                return (correction.text || correction.answer || correction.content || JSON.stringify(correction)) + '';
+            }
+            return String(correction);
+        }
+
+        function renderCorrection(correction) {
+            const text = normalizeCorrection(correction).trim();
+            return `
+                <div class="dim-card">
+                    <div class="dim-title">
+                        <h3>Correction（改写后优秀答案）</h3>
+                    </div>
+                    <p style="background:#f9f9f9;padding:12px;border-left:4px solid #2ecc71;white-space:pre-wrap;word-wrap:break-word;margin-top:10px;">
+                        ${escapeHtml(text || '无')}
+                    </p>
+                    <div class="mini-note">基于你的回答做更地道、更高分的改写版本（可直接背诵/复述）。</div>
+                </div>
+            `;
+        }
+
+        function buildFollowupText(feedback) {
+            const df = feedback?.dimension_feedback || {};
+            const dims = ["delivery", "language_use", "topic_development"];
+
+            let issues = [];
+            let reasons = [];
+
+            dims.forEach(dim => {
+                const problems = safeArray(df?.[dim]?.problems);
+                const fixes = safeArray(df?.[dim]?.fixes);
+
+                problems.slice(0, 2).forEach(p => issues.push(`[${prettyDimName(dim)}] ${p}`));
+                fixes.slice(0, 2).forEach(f => reasons.push(`[${prettyDimName(dim)}] ${f}`));
+            });
+
+            // ✅ 把 correction 带到 followup（沿用 answer 参数）
+            const correctionText = normalizeCorrection(feedback?.correction).trim();
+
+            return {
+                issues: issues.join('\n'),
+                reason: reasons.join('\n'),
+                answer: correctionText || ''
+            };
+        }
+
+        function renderFeedback(feedback) {
+            if (!feedback || typeof feedback !== 'object') {
+                return `<p>反馈格式异常：无法解析。</p>`;
+            }
+
+            const overall = feedback.overall_score ?? 'N/A';
+            const ds = feedback.dimension_scores || {};
+            const df = feedback.dimension_feedback || {};
+
+            let html = `
+                <div class="score-row">
+                    <div class="score-badge">Overall Score: ${escapeHtml(overall)}</div>
+                    <div class="score-badge">Delivery: ${escapeHtml(ds.delivery ?? 'N/A')}</div>
+                    <div class="score-badge">Language Use: ${escapeHtml(ds.language_use ?? 'N/A')}</div>
+                    <div class="score-badge">Topic Dev: ${escapeHtml(ds.topic_development ?? 'N/A')}</div>
+                </div>
+            `;
+
+            ["delivery", "language_use", "topic_development"].forEach(dim => {
+                html += renderDimensionFeedback(dim, df?.[dim] || {});
+            });
+
+            // ✅ 新增：优秀改写答案展示（放在三维度之后、词汇短语之前）
+            if (feedback.correction !== undefined && feedback.correction !== null) {
+                html += renderCorrection(feedback.correction);
+            }
+
+            html += renderWordsTable(feedback.recommended_words, "Recommended Words（推荐词汇）");
+            html += renderWordsTable(feedback.recommended_phrases, "Recommended Phrases（推荐短语）");
+            html += renderSentences(feedback.recommended_sentences);
+
+            return html;
+        }
+
         function startRecording() {
             navigator.mediaDevices.getUserMedia({ audio: true })
                 .then(stream => {
@@ -137,7 +365,6 @@
                     document.getElementById('stopBtn').classList.remove('hidden');
                     document.getElementById('recordStatus').innerText = '正在录音...';
 
-                    // 45秒倒计时
                     let timeLeft = 45;
                     document.getElementById('countdown').innerText = timeLeft;
                     countdownInterval = setInterval(() => {
@@ -170,9 +397,7 @@
             fetch(`process_task_audio/`, {
                 method: 'POST',
                 body: formData,
-                headers: {
-                    'X-CSRFToken': '{{ csrf_token }}'
-                }
+                headers: { 'X-CSRFToken': '{{ csrf_token }}' }
             })
             .then(response => response.json())
             .then(data => {
@@ -208,43 +433,34 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // 1. 显示评分报告
-                    let html = `<p><strong>评分:</strong> ${data.feedback.score || 'N/A'}</p>`;
-                    html += `<p><strong>问题:</strong> ${data.feedback.issues || ''}</p>`;
-                    html += `<p><strong>建议:</strong> ${data.feedback.reason || ''}</p>`;
-                    html += `<p><strong>参考答案:</strong> ${data.feedback.answer || ''}</p>`;
-                    if (data.feedback.phrases) {
-                        html += `<p><strong>推荐短语:</strong> ${data.feedback.phrases.join(', ')}</p>`;
-                    }
-                    html += `<p><strong>推荐句子:</strong> ${data.feedback.sentences || ''}</p>`;
-                    document.getElementById('feedbackContent').innerHTML = html;
+                    const feedback = data.feedback || {};
+                    document.getElementById('feedbackContent').innerHTML = renderFeedback(feedback);
 
-                    // 2. 显示 PDF 链接（如果有）
                     if (data.pdf_url) {
                         const link = document.getElementById('pdfLink');
                         link.href = data.pdf_url;
                         link.style.display = 'inline';
+                    } else {
+                        document.getElementById('pdfLink').style.display = 'none';
                     }
 
-                    // 显示评分区域
                     document.getElementById('feedbackSection').classList.remove('hidden');
 
-                    // 3. 显示通用 followup 跳转按钮
                     const followupBtn = document.getElementById('followupBtn');
                     followupBtn.classList.remove('hidden');
 
                     followupBtn.onclick = function () {
-                        // 通用 followup 路由（使用命名空间 spoken_ai）
                         const baseUrl = "{% url 'spoken_ai:followup' %}";
+                        const pack = buildFollowupText(feedback);
 
-                        // 用 URLSearchParams 打包所有需要的内容
                         const params = new URLSearchParams({
-                            task_name: "{{ task.name|default:''|escapejs }}",    // 显示在标题上的任务名
+                            task_name: "{{ task.name|default:''|escapejs }}",
                             readingtext: "{{ task.readingtext|default:''|escapejs }}",
                             student_answer: finalText,
-                            issues: data.feedback.issues || '',
-                            reason: data.feedback.reason || '',
-                            answer: data.feedback.answer || ''
+                            issues: pack.issues || '',
+                            reason: pack.reason || '',
+                            // ✅ answer 参数承载 correction（优秀改写答案）
+                            answer: pack.answer || ''
                         });
 
                         window.location.href = baseUrl + "?" + params.toString();

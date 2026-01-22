@@ -1,51 +1,413 @@
 {% extends "base.html" %}
-{% block title %}发布图文{% endblock %}
-{% block header_title %}发布图文{% endblock %}
+
+{% block title %}发布 · Post{% endblock %}
+{% block header_title %}发布内容{% endblock %}
 
 {% block page_style %}
-  .wrap{max-width:860px; margin: 0 auto; padding: 0 24px 40px;}
-  .panel{
-    background: var(--card-bg);
-    backdrop-filter: blur(var(--blur));
-    box-shadow: var(--shadow);
-    border-radius: 18px;
-    padding: 18px;
-  }
-  .row{margin-bottom:12px;}
-  label{display:block; margin-bottom:6px; font-weight:700;}
-  input[type="text"], textarea{
-    width:100%; border:none; border-radius:14px;
-    padding:12px; background: rgba(255,255,255,.35);
-    color: var(--text);
-  }
-  textarea{min-height:140px; resize: vertical;}
-  .btn{padding:10px 14px; border-radius:999px; border:none; cursor:pointer;}
-  .btn.primary{background:linear-gradient(135deg,#6750a4,#9f7aea); color:#fff;}
+.wrap{
+  max-width:820px;
+  margin:0 auto;
+  padding:18px 18px 56px;
+}
+
+.hero{ margin:6px 0 14px; }
+.hero .h-title{ font-size:20px;font-weight:900;letter-spacing:.2px; }
+.hero .h-sub{ margin-top:6px;font-size:13px;opacity:.75;line-height:1.5; }
+
+.card{
+  border-radius:22px;
+  background:var(--card-bg);
+  backdrop-filter:blur(var(--blur));
+  box-shadow:var(--shadow);
+  overflow:hidden;
+  border:1px solid rgba(103,80,164,.16);
+}
+.card-inner{ padding:18px 18px 16px; }
+
+.form-row{ margin-bottom:14px; }
+.label{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:10px;margin-bottom:8px;
+}
+.label b{ font-size:13px;opacity:.9; }
+.label span{ font-size:12px;opacity:.6; }
+
+input[type="text"], textarea, select{
+  width:100%;
+  padding:12px 14px;
+  border-radius:16px;
+  border:1px solid rgba(103,80,164,.14);
+  outline:none;
+  background:rgba(255,255,255,.38);
+  color:var(--text);
+  transition:.18s ease;
+}
+textarea{ min-height:160px; resize:vertical; line-height:1.55; }
+input[type="text"]:focus, textarea:focus, select:focus{
+  border-color:rgba(103,80,164,.45);
+  box-shadow:0 0 0 4px rgba(103,80,164,.12);
+  background:rgba(255,255,255,.48);
+}
+
+.switch-row{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:12px;padding:12px 14px;border-radius:16px;
+  border:1px solid rgba(103,80,164,.14);
+  background:rgba(255,255,255,.32);
+}
+.switch-row .hint{ font-size:12px;opacity:.65;margin-top:4px;line-height:1.4; }
+
+.uploader{
+  position:relative;
+  border-radius:18px;
+  border:1px dashed rgba(103,80,164,.35);
+  background:rgba(103,80,164,.06);
+  padding:14px;
+}
+.uploader-top{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+}
+.uploader-title{ display:flex;align-items:center;gap:10px; }
+.uploader-badge{
+  width:34px;height:34px;border-radius:14px;
+  display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,#6750a4,#9f7aea);
+  color:#fff;font-weight:800;
+}
+.uploader-text b{ display:block;font-size:13px; }
+.uploader-text small{ display:block;font-size:12px;opacity:.7;margin-top:2px; }
+
+.pick-btn{
+  padding:10px 14px;
+  border-radius:999px;
+  border:1px solid rgba(103,80,164,.22);
+  background:rgba(255,255,255,.42);
+  cursor:pointer;
+  font-size:13px;
+  color:var(--text);
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  transition:.18s ease;
+  white-space:nowrap;
+  user-select:none;
+}
+.pick-btn:hover{ transform:translateY(-1px); box-shadow:0 10px 20px rgba(0,0,0,.12); }
+.pick-btn:active{ transform:translateY(0px) scale(.98); }
+
+.file-input-hidden{
+  position:absolute;
+  width:1px;height:1px;
+  padding:0;margin:-1px;
+  overflow:hidden;
+  clip:rect(0,0,0,0);
+  white-space:nowrap;
+  border:0;
+}
+
+.preview-grid{
+  display:grid;
+  grid-template-columns:repeat(4, 1fr);
+  gap:10px;
+  margin-top:12px;
+}
+@media(max-width:720px){ .preview-grid{grid-template-columns:repeat(3, 1fr);} }
+@media(max-width:520px){ .preview-grid{grid-template-columns:repeat(2, 1fr);} }
+
+.preview-item{
+  position:relative;
+  border-radius:16px;
+  overflow:hidden;
+  background:rgba(103,80,164,.10);
+  aspect-ratio:1/1;
+  cursor:grab;
+}
+.preview-item:active{ cursor:grabbing; }
+.preview-item img{ width:100%;height:100%;object-fit:cover;display:block; }
+
+.preview-remove{
+  position:absolute;
+  top:8px; right:8px;
+  width:28px; height:28px;
+  border-radius:999px;
+  border:none;
+  cursor:pointer;
+  background:rgba(0,0,0,.45);
+  color:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:16px;
+  line-height:1;
+}
+.preview-remove:hover{ background:rgba(0,0,0,.6); }
+
+.preview-item.dragging{ opacity:.55; transform:scale(.98); }
+.preview-item.drag-over{ outline:2px dashed rgba(103,80,164,.55); outline-offset:-6px; }
+
+.preview-count{ margin-top:10px;font-size:12px;opacity:.65; }
+
+.footer-bar{
+  display:flex;
+  gap:10px;
+  justify-content:flex-end;
+  padding:14px 16px;
+  border-top:1px solid rgba(103,80,164,.12);
+  background:rgba(255,255,255,.18);
+}
+
+.btn{
+  padding:11px 16px;
+  border-radius:999px;
+  border:1px solid rgba(103,80,164,.22);
+  background:rgba(255,255,255,.42);
+  cursor:pointer;
+  text-decoration:none;
+  color:var(--text);
+  font-size:14px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  transition:.18s ease;
+}
+.btn:hover{ transform:translateY(-1px); box-shadow:0 12px 22px rgba(0,0,0,.12); }
+.btn:active{ transform:translateY(0px) scale(.98); }
+.btn.primary{
+  border:none;color:#fff;
+  background:linear-gradient(135deg,#6750a4,#9f7aea);
+}
+.btn.primary:disabled{ opacity:.6;cursor:not-allowed;box-shadow:none;transform:none; }
 {% endblock %}
 
 {% block content %}
 <div class="wrap">
-  <div class="panel">
-    <form method="post" enctype="multipart/form-data">
+
+  <div class="hero">
+    <div class="h-title">发布一条新内容</div>
+    <div class="h-sub">像小红书一样记录 · 像微信一样轻松分享</div>
+  </div>
+
+  <div class="card">
+    <form method="post" enctype="multipart/form-data" id="postForm">
       {% csrf_token %}
 
-      <div class="row">
-        <label>标题（可选）</label>
-        {{ form.title }}
+      <div class="card-inner">
+        <div class="form-row">
+          <div class="label"><b>标题</b><span>可选</span></div>
+          {{ form.title }}
+        </div>
+
+        <div class="form-row">
+          <div class="label"><b>内容</b><span>支持换行</span></div>
+          {{ form.content }}
+        </div>
+
+        <div class="form-row">
+          <div class="switch-row">
+            <div>
+              <div style="font-weight:800;font-size:13px;">公开展示</div>
+              <div class="hint">关闭则仅自己可见（更像私密日记）</div>
+            </div>
+            <div>{{ form.is_public }}</div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="uploader">
+
+            <div class="uploader-top">
+              <div class="uploader-title">
+                <div class="uploader-badge">图</div>
+                <div class="uploader-text">
+                  <b>添加图片</b>
+                  <small>支持多次添加，最多 6 张；可拖拽对调顺序</small>
+                </div>
+              </div>
+
+              <!-- ✅ 让按钮触发 pickerInput，而不是提交用 imagesInput -->
+              <label class="pick-btn" for="pickerInput">
+                <span style="font-weight:900;">＋</span> 选择图片
+              </label>
+            </div>
+
+            <!-- ✅ 真正用于提交的 input：name="images"（永远不清空） -->
+            <input
+              id="imagesInput"
+              class="file-input-hidden"
+              type="file"
+              name="images"
+              accept="image/*"
+              multiple
+            >
+
+            <!-- ✅ 专门用于选择的 input：选完就清空它，支持重复选择同一张 -->
+            <input
+              id="pickerInput"
+              class="file-input-hidden"
+              type="file"
+              accept="image/*"
+              multiple
+            >
+
+            <div class="preview-grid" id="previewGrid" style="display:none;"></div>
+            <div class="preview-count" id="previewCount" style="display:none;"></div>
+
+          </div>
+        </div>
+
       </div>
 
-      <div class="row">
-        <label>正文</label>
-        {{ form.content }}
+      <div class="footer-bar">
+        <a class="btn" href="javascript:history.back()">取消</a>
+        <button type="submit" class="btn primary" id="submitBtn">发布</button>
       </div>
-
-      <div class="row">
-        <label>图片（可多选）</label>
-        <input type="file" name="images" multiple accept="image/*">
-      </div>
-
-      <button class="btn primary" type="submit">发布</button>
     </form>
   </div>
+
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+  const MAX_IMAGES = 6;
+
+  const submitInput = document.getElementById('imagesInput'); // 真正提交的 input
+  const picker = document.getElementById('pickerInput');      // 选择用 input
+  const grid = document.getElementById('previewGrid');
+  const count = document.getElementById('previewCount');
+  const submitBtn = document.getElementById('submitBtn');
+  const form = document.getElementById('postForm');
+
+  if(!submitInput || !picker || !grid || !count) return;
+
+  let selectedFiles = [];
+
+  function fileKey(f){
+    return `${f.name}__${f.size}__${f.lastModified}`;
+  }
+
+  function syncToSubmit(){
+    const dt = new DataTransfer();
+    selectedFiles.forEach(f => dt.items.add(f));
+    submitInput.files = dt.files;
+  }
+
+  function render(){
+    if(!selectedFiles.length){
+      grid.innerHTML = '';
+      grid.style.display = 'none';
+      count.style.display = 'none';
+      count.textContent = '';
+      return;
+    }
+
+    grid.innerHTML = '';
+    grid.style.display = 'grid';
+
+    let dragFromIndex = null;
+
+    selectedFiles.forEach((file, idx)=>{
+      const url = URL.createObjectURL(file);
+
+      const item = document.createElement('div');
+      item.className = 'preview-item';
+      item.draggable = true;
+
+      const img = document.createElement('img');
+      img.src = url;
+      img.onload = () => URL.revokeObjectURL(url);
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'preview-remove';
+      btn.textContent = '×';
+      btn.addEventListener('click', (ev)=>{
+        ev.stopPropagation();
+        selectedFiles.splice(idx, 1);
+        syncToSubmit();
+        render();
+      });
+
+      item.addEventListener('dragstart', ()=>{
+        dragFromIndex = idx;
+        item.classList.add('dragging');
+      });
+
+      item.addEventListener('dragend', ()=>{
+        item.classList.remove('dragging');
+        Array.from(grid.children).forEach(el => el.classList.remove('drag-over'));
+      });
+
+      item.addEventListener('dragover', (e)=>{
+        e.preventDefault();
+        item.classList.add('drag-over');
+      });
+
+      item.addEventListener('dragleave', ()=>{
+        item.classList.remove('drag-over');
+      });
+
+      item.addEventListener('drop', (e)=>{
+        e.preventDefault();
+        item.classList.remove('drag-over');
+
+        const toIndex = idx;
+        if(dragFromIndex === null || dragFromIndex === toIndex) return;
+
+        const moved = selectedFiles.splice(dragFromIndex, 1)[0];
+        selectedFiles.splice(toIndex, 0, moved);
+
+        dragFromIndex = null;
+        syncToSubmit();
+        render();
+      });
+
+      item.appendChild(img);
+      item.appendChild(btn);
+      grid.appendChild(item);
+    });
+
+    count.style.display = 'block';
+    count.textContent = `已选择 ${selectedFiles.length} / ${MAX_IMAGES} 张图片（可拖拽对调顺序）`;
+  }
+
+  picker.addEventListener('change', (e)=>{
+    let files = Array.from(e.target.files || []);
+    if(!files.length) return;
+
+    files = files.filter(f => f.type && f.type.startsWith('image/'));
+
+    const exists = new Set(selectedFiles.map(fileKey));
+    for(const f of files){
+      if(!exists.has(fileKey(f))){
+        selectedFiles.push(f);
+        exists.add(fileKey(f));
+      }
+    }
+
+    if(selectedFiles.length > MAX_IMAGES){
+      alert(`最多只能上传 ${MAX_IMAGES} 张图片。`);
+      selectedFiles = selectedFiles.slice(0, MAX_IMAGES);
+    }
+
+    syncToSubmit();
+
+    // ✅ 只清空 picker，允许重复选择同一张也触发 change
+    picker.value = '';
+
+    render();
+  });
+
+  form?.addEventListener('submit', ()=>{
+    // 可选：提交前打印确认
+    // console.log("submit files:", submitInput.files ? submitInput.files.length : 0);
+    submitBtn.disabled = true;
+    submitBtn.textContent = '发布中…';
+  });
+
+  render();
+})();
+</script>
 {% endblock %}
