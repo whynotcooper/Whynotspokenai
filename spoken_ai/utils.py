@@ -1099,6 +1099,7 @@ response:
             "student_answer": student_answer,
         }
 
+
         def _coerce_list(x):
             """尽量把输出转成 list（宽松处理）"""
             if x is None:
@@ -1230,6 +1231,74 @@ response:
             print(f"[ERROR] Task4 Analysis Failed: {error_msg}")
             self._log_interaction("task4", input_data, error=error_msg)
             raise
+    def answer_followup_question(
+            self,
+            reading_text: str,
+            student_answer: str,
+            student_question: str,
+            temperature: float = 0.3,
+            log: bool = True,
+        ) -> dict:
+            """
+            处理学生对某一题的追问，返回中英双语解答（字典形式）
+
+            :param reading_text: 原始题目 / 阅读材料 / 听力文本
+            :param student_answer: 学生最初的口语作答（文本版）
+            :param student_question: 学生的追问（中/英文都可以）
+            :param temperature: LLM 采样温度
+            :param log: 是否写入日志文件
+            :return: {
+                "english_answer": "...",
+                "chinese_answer": "..."
+            }
+            """
+            system_prompt = self.prompts["followup"]
+            
+            user_content = (
+                "Here is the context for the question.\n\n"
+                f"=== READING TEXT / ORIGINAL PROMPT ===\n{reading_text}\n\n"
+                f"=== STUDENT ANSWER (ORIGINAL RESPONSE) ===\n{student_answer}\n\n"
+                f"=== STUDENT FOLLOW-UP QUESTION ===\n{student_question}\n"
+            )
+
+            response = self.client.chat.completions.create(
+                model=self.model_name,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_content},
+                ],
+                temperature=temperature,
+            )
+
+            raw_text = response.choices[0].message.content.strip()
+            print("原始模型输出：", raw_text)
+            # 尝试解析 JSON
+            try:
+                result = json.loads(raw_text)
+            except json.JSONDecodeError:
+                # 如果模型有轻微格式问题，可以做一点点兜底（也可以直接 raise）
+                # 这里简单兜底成一个统一结构
+                result = {
+                    "english_answer": raw_text,
+                    "chinese_answer": "模型返回的 JSON 格式不完全合法，已原样保留英文内容，请检查上游 prompt 或输出。"
+                }
+
+            # 写日志（可选）
+            if log:
+                log_record = {
+                    "type": "followup",
+                    "reading_text": reading_text,
+                    "student_answer": student_answer,
+                    "student_question": student_question,
+                    "model_name": self.model_name,
+                    "temperature": temperature,
+                    "raw_response": raw_text,
+                    "parsed_response": result,
+                }
+                with open(self.log_file, "a", encoding="utf-8") as f:
+                    f.write(json.dumps(log_record, ensure_ascii=False) + "\n")
+            return result
+
 
 import os
 import io

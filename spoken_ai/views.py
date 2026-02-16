@@ -15,8 +15,7 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 import io
 from django.shortcuts import render, get_object_or_404
-from .models import Task1Model
-from .models import Task2Model, Task3Model, Task4Model
+from .models import Task1Model, Task2Model, Task3Model, Task4Model, ToeflRecordModel
 from django.views.decorators.http import require_http_methods
 
 UPLOAD_DIR = os.path.join(settings.MEDIA_ROOT, 'audio')
@@ -490,7 +489,7 @@ from .utils import generate_pdf_report2  # 你需要实现这个函数
 @require_http_methods(["POST"])
 def analyse_task1(request, task_id):
     """
-    接收用户确认后的文本，进行 AI 分析并生成 PDF。
+    接收用户确认后的文本，进行 AI 分析并生成 PDF，并保存做题记录。
     """
     task = get_object_or_404(Task1Model, id=task_id)
     try:
@@ -518,6 +517,46 @@ def analyse_task1(request, task_id):
             taskname=taskname,
         )
 
+        # ========== 保存做题记录 ==========
+        username = request.session.get('username')
+        if username:
+            try:
+                user = UserInfoModel.objects.get(username=username)
+
+                # 从反馈中提取分数（如果有的话）
+                score = None
+                score_details = None
+                if isinstance(feedback, dict):
+                    # 尝试从反馈中提取分数
+                    score_details = feedback
+                    # 假设反馈中包含 overall_score 字段
+                    if 'overall_score' in feedback:
+                        try:
+                            score = float(feedback.get('overall_score', 0))
+                        except (ValueError, TypeError):
+                            pass
+
+                # 保存记录
+                record = ToeflRecordModel.objects.create(
+                    user=user,
+                    task_type=1,
+                    task=task,
+                    student_answer=student_answer,
+                    feedback=feedback,
+                    score=score,
+                    score_details=score_details,
+                    pdf_report=pdf_url if pdf_url else None,
+                    status='completed'
+                )
+
+                print(f"[INFO] 做题记录已保存: Record ID {record.id}")
+
+            except UserInfoModel.DoesNotExist:
+                print(f"[WARNING] 用户不存在: {username}")
+            except Exception as record_error:
+                print(f"[ERROR] 保存做题记录失败: {record_error}")
+        # ========== 保存记录结束 ==========
+
         return JsonResponse({
             "success": True,
             "feedback": feedback,
@@ -534,7 +573,7 @@ def analyse_task1(request, task_id):
 @require_http_methods(["POST"])
 def analyse_task2(request, task_id):
     """
-    接收用户的 Task2 回答文本，进行 AI 分析并生成 PDF。
+    接收用户的 Task2 回答文本，进行 AI 分析并生成 PDF，并保存做题记录。
     """
     task = get_object_or_404(Task2Model, id=task_id)
 
@@ -563,6 +602,44 @@ def analyse_task2(request, task_id):
             task_no=2,
             taskname=taskname,
         )
+
+        # ========== 保存做题记录 ==========
+        username = request.session.get('username')
+        if username:
+            try:
+                user = UserInfoModel.objects.get(username=username)
+
+                # 从反馈中提取分数
+                score = None
+                score_details = None
+                if isinstance(feedback, dict):
+                    score_details = feedback
+                    if 'overall_score' in feedback:
+                        try:
+                            score = float(feedback.get('overall_score', 0))
+                        except (ValueError, TypeError):
+                            pass
+
+                # 保存记录
+                record = ToeflRecordModel.objects.create(
+                    user=user,
+                    task_type=2,
+                    task2=task,
+                    student_answer=student_answer,
+                    feedback=feedback,
+                    score=score,
+                    score_details=score_details,
+                    pdf_report=pdf_url if pdf_url else None,
+                    status='completed'
+                )
+
+                print(f"[INFO] Task2 做题记录已保存: Record ID {record.id}")
+
+            except UserInfoModel.DoesNotExist:
+                print(f"[WARNING] 用户不存在: {username}")
+            except Exception as record_error:
+                print(f"[ERROR] 保存 Task2 做题记录失败: {record_error}")
+        # ========== 保存记录结束 ==========
 
         return JsonResponse({
             "success": True,
@@ -622,6 +699,7 @@ def solve_followup(request):
     #   "english_answer": "...",
     #   "chinese_answer": "..."
     # }
+    print("AI 追问结果：", feedback)
     english_answer = (feedback.get("english_answer") or "").strip()
     chinese_answer = (feedback.get("chinese_answer") or "").strip()
 
@@ -648,7 +726,7 @@ def solve_followup(request):
 @require_http_methods(["POST"])
 def analyse_task3(request, task_id):
     """
-    接收用户的 Task3 回答文本，进行 AI 分析并生成 PDF。（Integrated – Academic）
+    接收用户的 Task3 回答文本，进行 AI 分析并生成 PDF，并保存做题记录。
     """
     # 获取对应的 Task3 题目
     task = get_object_or_404(Task3Model, id=task_id)
@@ -674,6 +752,44 @@ def analyse_task3(request, task_id):
             feedback=feedback
         )
 
+        # ========== 保存做题记录 ==========
+        username = request.session.get('username')
+        if username:
+            try:
+                user = UserInfoModel.objects.get(username=username)
+
+                # 从反馈中提取分数
+                score = None
+                score_details = None
+                if isinstance(feedback, dict):
+                    score_details = feedback
+                    if 'overall_score' in feedback:
+                        try:
+                            score = float(feedback.get('overall_score', 0))
+                        except (ValueError, TypeError):
+                            pass
+
+                # 保存记录
+                record = ToeflRecordModel.objects.create(
+                    user=user,
+                    task_type=3,
+                    task3=task,
+                    student_answer=student_answer,
+                    feedback=feedback,
+                    score=score,
+                    score_details=score_details,
+                    pdf_report=pdf_url if pdf_url else None,
+                    status='completed'
+                )
+
+                print(f"[INFO] Task3 做题记录已保存: Record ID {record.id}")
+
+            except UserInfoModel.DoesNotExist:
+                print(f"[WARNING] 用户不存在: {username}")
+            except Exception as record_error:
+                print(f"[ERROR] 保存 Task3 做题记录失败: {record_error}")
+        # ========== 保存记录结束 ==========
+
         return JsonResponse({
             'success': True,
             'feedback': feedback,
@@ -686,7 +802,7 @@ def analyse_task3(request, task_id):
         return JsonResponse({'error': str(e)}, status=500)
 def analyse_task4(request, task_id):
     """
-    接收用户的 Task4 回答文本，进行 AI 分析并生成 PDF。（Integrated – Academic Lecture Only）
+    接收用户的 Task4 回答文本，进行 AI 分析并生成 PDF，并保存做题记录。
     """
     # 获取对应的 Task4 题目
     task = get_object_or_404(Task4Model, id=task_id)
@@ -710,6 +826,44 @@ def analyse_task4(request, task_id):
             student_answer=student_answer,
             feedback=feedback
         )
+
+        # ========== 保存做题记录 ==========
+        username = request.session.get('username')
+        if username:
+            try:
+                user = UserInfoModel.objects.get(username=username)
+
+                # 从反馈中提取分数
+                score = None
+                score_details = None
+                if isinstance(feedback, dict):
+                    score_details = feedback
+                    if 'overall_score' in feedback:
+                        try:
+                            score = float(feedback.get('overall_score', 0))
+                        except (ValueError, TypeError):
+                            pass
+
+                # 保存记录
+                record = ToeflRecordModel.objects.create(
+                    user=user,
+                    task_type=4,
+                    task4=task,
+                    student_answer=student_answer,
+                    feedback=feedback,
+                    score=score,
+                    score_details=score_details,
+                    pdf_report=pdf_url if pdf_url else None,
+                    status='completed'
+                )
+
+                print(f"[INFO] Task4 做题记录已保存: Record ID {record.id}")
+
+            except UserInfoModel.DoesNotExist:
+                print(f"[WARNING] 用户不存在: {username}")
+            except Exception as record_error:
+                print(f"[ERROR] 保存 Task4 做题记录失败: {record_error}")
+        # ========== 保存记录结束 ==========
 
         return JsonResponse({
             'success': True,
@@ -739,6 +893,229 @@ def followup(request):
     }
 
     return render(request, "followup.html", context)
+
+
+# ============================================
+# 用户做题记录相关视图
+# ============================================
+
+@require_http_methods(["GET"])
+def toefl_records(request):
+    """
+    查看用户的 TOEFL 做题记录列表
+    """
+    username = request.session.get('username')
+    if not username:
+        return render(request, 'login.html', {'error': '请先登录'})
+
+    try:
+        user = UserInfoModel.objects.get(username=username)
+    except UserInfoModel.DoesNotExist:
+        return render(request, 'login.html', {'error': '用户不存在'})
+
+    # 获取筛选参数
+    task_type = request.GET.get('task_type')
+    status = request.GET.get('status')
+
+    # 查询记录
+    records = ToeflRecordModel.objects.filter(user=user)
+
+    if task_type:
+        records = records.filter(task_type=int(task_type))
+
+    if status:
+        records = records.filter(status=status)
+
+    # 按时间倒序
+    records = records.order_by('-created_at')
+
+    # 统计信息
+    stats = {
+        'total': ToeflRecordModel.objects.filter(user=user).count(),
+        'task1': ToeflRecordModel.objects.filter(user=user, task_type=1).count(),
+        'task2': ToeflRecordModel.objects.filter(user=user, task_type=2).count(),
+        'task3': ToeflRecordModel.objects.filter(user=user, task_type=3).count(),
+        'task4': ToeflRecordModel.objects.filter(user=user, task_type=4).count(),
+        'avg_score': None,
+    }
+
+    # 计算平均分
+    scores = ToeflRecordModel.objects.filter(user=user, score__isnull=False).values_list('score', flat=True)
+    if scores:
+        stats['avg_score'] = round(sum(scores) / len(scores), 2)
+
+    context = {
+        'records': records,
+        'stats': stats,
+        'current_task_type': task_type,
+        'current_status': status,
+        'username': username,
+    }
+
+    return render(request, 'toefl_records.html', context)
+
+
+@require_http_methods(["GET"])
+def toefl_record_detail(request, record_id):
+    """
+    查看单条做题记录的详情
+    """
+    username = request.session.get('username')
+    if not username:
+        return render(request, 'login.html', {'error': '请先登录'})
+
+    try:
+        user = UserInfoModel.objects.get(username=username)
+        record = get_object_or_404(ToeflRecordModel, id=record_id, user=user)
+    except (UserInfoModel.DoesNotExist, Http404):
+        return render(request, 'error.html', {'error': '记录不存在或无权访问'})
+
+    # 预处理 feedback 中的推荐数据，确保格式统一
+    if record.feedback:
+        # 处理 recommended_words
+        if 'recommended_words' in record.feedback:
+            record.feedback['recommended_words'] = [
+                {
+                    'en': item.get('en') or item.get('word') or item.get('english') or item.get('english_word') or '',
+                    'zh': item.get('zh') or item.get('chinese') or item.get('meaning') or item.get('chinese_meaning') or ''
+                }
+                for item in record.feedback['recommended_words']
+                if isinstance(item, dict)
+            ]
+
+        # 处理 recommended_phrases
+        if 'recommended_phrases' in record.feedback:
+            record.feedback['recommended_phrases'] = [
+                {
+                    'en': item.get('en') or item.get('phrase') or item.get('english') or '',
+                    'zh': item.get('zh') or item.get('chinese') or item.get('meaning') or ''
+                }
+                for item in record.feedback['recommended_phrases']
+                if isinstance(item, dict)
+            ]
+
+        # 处理 recommended_sentences
+        if 'recommended_sentences' in record.feedback:
+            # 确保是字符串列表
+            record.feedback['recommended_sentences'] = [
+                str(item) if not isinstance(item, str) else item
+                for item in record.feedback['recommended_sentences']
+            ]
+
+    # 预处理 score_details，确保各维度数据安全访问
+    # 兼容两种结构：
+    # 1. score_details 直接包含 delivery, language_use, topic_development
+    # 2. score_details 包含 dimension_feedback，其下才是各维度
+    if record.score_details and isinstance(record.score_details, dict):
+        # 如果 dimension_feedback 存在，优先使用它
+        dim_fb = record.score_details.get("dimension_feedback", {})
+        if isinstance(dim_fb, dict) and dim_fb:
+            # 使用 dimension_feedback 中的数据
+            for dim in ['delivery', 'language_use', 'topic_development']:
+                if dim in dim_fb:
+                    record.score_details[dim] = dim_fb[dim]
+        
+        # 确保每个维度都有完整的结构
+        for dim in ['delivery', 'language_use', 'topic_development']:
+            if dim in record.score_details:
+                dim_data = record.score_details[dim]
+                if isinstance(dim_data, dict):
+                    # 确保所有必要字段都存在
+                    dim_data.setdefault('score', None)
+                    dim_data.setdefault('problems', [])
+                    dim_data.setdefault('evidence', [])
+                    dim_data.setdefault('fixes', [])
+                else:
+                    # 如果不是字典，创建完整结构
+                    record.score_details[dim] = {
+                        'score': None,
+                        'problems': [],
+                        'evidence': [],
+                        'fixes': []
+                    }
+            else:
+                # 如果维度不存在，创建完整结构
+                record.score_details[dim] = {
+                    'score': None,
+                    'problems': [],
+                    'evidence': [],
+                    'fixes': []
+                }
+    else:
+        # 如果 score_details 为空，创建默认结构
+        record.score_details = {
+            'delivery': {'score': None, 'problems': [], 'evidence': [], 'fixes': []},
+            'language_use': {'score': None, 'problems': [], 'evidence': [], 'fixes': []},
+            'topic_development': {'score': None, 'problems': [], 'evidence': [], 'fixes': []}
+        }
+
+    context = {
+        'record': record,
+        'username': username,
+    }
+
+    return render(request, 'toefl_record_detail.html', context)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def update_record_status(request, record_id):
+    """
+    更新做题记录的状态
+    """
+    username = request.session.get('username')
+    if not username:
+        return JsonResponse({'success': False, 'error': '请先登录'}, status=401)
+
+    try:
+        user = UserInfoModel.objects.get(username=username)
+        record = get_object_or_404(ToeflRecordModel, id=record_id, user=user)
+    except (UserInfoModel.DoesNotExist, Http404):
+        return JsonResponse({'success': False, 'error': '记录不存在'}, status=404)
+
+    try:
+        data = json.loads(request.body)
+        new_status = data.get('status')
+
+        if new_status not in ['completed', 'in_progress', 'reviewed']:
+            return JsonResponse({'success': False, 'error': '无效状态'}, status=400)
+
+        record.status = new_status
+        record.save()
+
+        return JsonResponse({'success': True, 'status': new_status})
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def add_record_note(request, record_id):
+    """
+    为做题记录添加备注
+    """
+    username = request.session.get('username')
+    if not username:
+        return JsonResponse({'success': False, 'error': '请先登录'}, status=401)
+
+    try:
+        user = UserInfoModel.objects.get(username=username)
+        record = get_object_or_404(ToeflRecordModel, id=record_id, user=user)
+    except (UserInfoModel.DoesNotExist, Http404):
+        return JsonResponse({'success': False, 'error': '记录不存在'}, status=404)
+
+    try:
+        data = json.loads(request.body)
+        note = data.get('note', '').strip()
+
+        record.notes = note
+        record.save()
+
+        return JsonResponse({'success': True})
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
  
 

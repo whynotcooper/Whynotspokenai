@@ -221,3 +221,163 @@ class Task4Model(models.Model):
 
     def __str__(self):
         return self.name
+
+
+# ============================================
+# 用户做题记录模型
+# ============================================
+
+class ToeflRecordModel(models.Model):
+    """
+    TOEFL 做题记录表
+    保存用户每次练习的答案、反馈、分数等信息
+    """
+
+    # 用户（外键）
+    user = models.ForeignKey(
+        UserInfoModel,
+        on_delete=models.CASCADE,
+        related_name='toefl_records',
+        verbose_name='用户'
+    )
+
+    # 任务类型（1-4）
+    TASK_TYPE_CHOICES = [
+        (1, 'Task 1 - Independent Speaking'),
+        (2, 'Task 2 - Integrated Speaking'),
+        (3, 'Task 3 - Integrated Academic'),
+        (4, 'Task 4 - Academic Lecture'),
+    ]
+    task_type = models.IntegerField(
+        choices=TASK_TYPE_CHOICES,
+        verbose_name='任务类型'
+    )
+
+    # 关联的任务（可选，允许为空）
+    task = models.ForeignKey(
+        Task1Model,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='user_records_task1',
+        verbose_name='Task 1 题目'
+    )
+    task2 = models.ForeignKey(
+        Task2Model,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='user_records_task2',
+        verbose_name='Task 2 题目'
+    )
+    task3 = models.ForeignKey(
+        Task3Model,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='user_records_task3',
+        verbose_name='Task 3 题目'
+    )
+    task4 = models.ForeignKey(
+        Task4Model,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='user_records_task4',
+        verbose_name='Task 4 题目'
+    )
+
+    # 用户的答案
+    student_answer = models.TextField(
+        verbose_name='用户答案'
+    )
+
+    # AI 反馈（JSON 格式）
+    feedback = models.JSONField(
+        verbose_name='AI 反馈',
+        null=True,
+        blank=True
+    )
+
+    # 分数（如果 AI 评估了分数）
+    score = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name='得分'
+    )
+
+    # 详细评分（JSON 格式，包含各个维度的分数）
+    score_details = models.JSONField(
+        null=True,
+        blank=True,
+        verbose_name='详细评分'
+    )
+
+    # PDF 报告路径
+    pdf_report = models.FileField(
+        upload_to='toefl_reports/%Y/%m/%d/',
+        null=True,
+        blank=True,
+        verbose_name='PDF 报告'
+    )
+
+    # 音频文件路径（如果用户上传了音频）
+    audio_file = models.FileField(
+        upload_to='toefl_audio/%Y/%m/%d/',
+        null=True,
+        blank=True,
+        verbose_name='音频文件'
+    )
+
+    # 练习状态
+    STATUS_CHOICES = [
+        ('completed', '已完成'),
+        ('in_progress', '进行中'),
+        ('reviewed', '已复习'),
+    ]
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='completed',
+        verbose_name='状态'
+    )
+
+    # 备注（用户自己添加的笔记）
+    notes = models.TextField(
+        null=True,
+        blank=True,
+        verbose_name='用户备注'
+    )
+
+    # 时间戳
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='创建时间'
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name='更新时间'
+    )
+
+    class Meta:
+        db_table = 'db_toefl_record'
+        verbose_name = 'TOEFL 做题记录'
+        verbose_name_plural = verbose_name
+        ordering = ['-created_at']  # 按时间倒序
+
+    def __str__(self):
+        return f"{self.user.username} - Task {self.task_type} - {self.created_at.strftime('%Y-%m-%d %H:%M')}"
+
+    def get_task_name(self):
+        """获取任务名称"""
+        if self.task_type == 1 and self.task:
+            return self.task.name
+        elif self.task_type == 2 and self.task2:
+            return self.task2.name
+        elif self.task_type == 3 and self.task3:
+            return self.task3.name
+        elif self.task_type == 4 and self.task4:
+            return self.task4.name
+        return f"Task {self.task_type}"

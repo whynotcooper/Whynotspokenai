@@ -4,98 +4,236 @@
 <head>
     <meta charset="UTF-8">
     <title>{{ task.name }}</title>
+
     <style>
-        body { font-family: "Microsoft YaHei", sans-serif; margin: 40px; line-height: 1.6; }
-        h1 { color: #2980b9; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        :root{
+            --bg: #f3f5f7;            /* 冷灰背景 */
+            --card: #ffffff;
+            --border: #e6e9ee;
+            --text: #1f2d3d;
+            --muted: #667085;
+            --primary: #1b4f9c;       /* ETS-like blue */
+            --primary-2: #2f6fd6;
+            --reading-bg: #f6f8fb;    /* 阅读框 */
+            --shadow: 0 8px 24px rgba(16,24,40,0.06);
+            --radius: 14px;
+        }
 
-        .section { margin: 25px 0; }
-        .section h2 { color: #2c3e50; font-size: 20px; margin-bottom: 8px; }
+        * { box-sizing: border-box; }
 
+        body {
+            font-family: "Microsoft YaHei", "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.75;
+            padding: 34px 18px;
+        }
+
+        /* 页面主体容器：营造“考试界面” */
+        .toefl-shell{
+            max-width: 980px;
+            margin: 0 auto;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 26px 26px 18px;
+        }
+
+        /* 顶部标题：更像考试标题栏 */
+        h1 {
+            margin: 0 0 14px;
+            font-size: 26px;
+            color: var(--primary);
+            letter-spacing: 0.2px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .section { margin: 18px 0; }
+
+        .section h2 {
+            color: #0f172a;
+            font-size: 18px;
+            margin: 0 0 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* 小标题前的蓝色竖条：ETS/考试常见信息提示感 */
+        .section h2::before{
+            content:"";
+            width: 6px;
+            height: 18px;
+            border-radius: 999px;
+            background: var(--primary-2);
+            display: inline-block;
+        }
+
+        /* 阅读文本：考试阅读框样式 */
+        .reading-box{
+            background: var(--reading-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 14px 16px;
+            position: relative;
+        }
+        .reading-box::before{
+            content:"Reading";
+            position: absolute;
+            top: -10px;
+            left: 14px;
+            background: var(--card);
+            padding: 0 10px;
+            font-size: 12px;
+            color: var(--muted);
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            line-height: 20px;
+            height: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* 默认段落/textarea 不再强制灰底（灰底由 reading-box/instruction 控制） */
         .section p, .section textarea {
-            background: #f9f9f9;
-            padding: 12px;
-            border-left: 4px solid #3498db;
+            background: transparent;
+            padding: 0;
+            border-left: none;
             white-space: pre-wrap;
             word-wrap: break-word;
             width: 100%;
-            box-sizing: border-box;
+            margin: 0;
         }
 
-        textarea { border: 1px solid #ccc; resize: vertical; min-height: 100px; }
+        /* 录音区提示：更像考试 instructions */
+        .instruction{
+            background: #f8fbff;
+            border: 1px solid #dbeafe;
+            border-radius: 12px;
+            padding: 12px 14px;
+            color: #0b3b7a;
+        }
+
+        textarea {
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            resize: vertical;
+            min-height: 120px;
+            padding: 12px 12px;
+            background: #fff;
+            box-shadow: 0 1px 0 rgba(16,24,40,0.02);
+        }
+
         .hidden { display: none; }
 
+        /* 按钮：克制的 ETS 风格 */
         .btn {
-            padding: 8px 16px;
-            margin: 5px;
-            background: #3498db;
+            padding: 10px 16px;
+            margin: 6px 8px 6px 0;
+            background: var(--primary);
             color: white;
-            border: none;
-            border-radius: 4px;
+            border: 1px solid rgba(0,0,0,0.02);
+            border-radius: 10px;
             cursor: pointer;
+            font-weight: 600;
+            letter-spacing: 0.2px;
+            box-shadow: 0 2px 8px rgba(27,79,156,0.18);
+            transition: transform .05s ease, background .15s ease;
         }
-        .btn:hover { background: #2980b9; }
-        .btn-secondary { background: #7f8c8d; }
-        .btn-secondary:hover { background: #95a5a6; }
+        .btn:hover { background: #163f7a; }
+        .btn:active { transform: translateY(1px); }
 
-        .timer { font-weight: bold; color: #e74c3c; }
-        .back { display: inline-block; margin-top: 20px; color: #7f8c8d; text-decoration: none; }
-        .back:hover { text-decoration: underline; }
+        .btn-secondary {
+            background: #f2f4f7;
+            color: #344054;
+            border: 1px solid var(--border);
+            box-shadow: none;
+        }
+        .btn-secondary:hover { background: #e9edf2; }
 
-        /* 评分展示样式 */
+        /* 计时器更像考试：右侧胶囊 */
+        .timer {
+            font-weight: 700;
+            color: #b42318;
+            background: #fff1f0;
+            border: 1px solid #ffd6d1;
+            padding: 6px 10px;
+            border-radius: 999px;
+            margin-left: 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* 评分展示样式（保持原结构，仅统一风格） */
         .score-row { display: flex; gap: 12px; flex-wrap: wrap; margin: 10px 0 0; }
         .score-badge {
-            background: #ecf5ff;
-            border: 1px solid #cfe6ff;
-            color: #1f6fb2;
+            background: #eef4ff;
+            border: 1px solid #d6e4ff;
+            color: #193b7a;
             padding: 8px 10px;
-            border-radius: 8px;
-            font-weight: 600;
+            border-radius: 10px;
+            font-weight: 700;
         }
         .dim-card {
-            border: 1px solid #eee;
-            border-radius: 10px;
+            border: 1px solid var(--border);
+            border-radius: 14px;
             padding: 14px;
             margin: 12px 0;
             background: #fff;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+            box-shadow: 0 2px 10px rgba(16,24,40,0.04);
         }
         .dim-title { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-        .dim-title h3 { margin: 0; color: #2c3e50; font-size: 18px; }
+        .dim-title h3 { margin: 0; color: #0f172a; font-size: 17px; }
         .dim-score {
-            background: #fff6e6;
-            border: 1px solid #ffe2b3;
-            color: #a35b00;
+            background: #fff7ed;
+            border: 1px solid #fed7aa;
+            color: #9a3412;
             padding: 4px 10px;
             border-radius: 999px;
-            font-weight: 700;
-            font-size: 13px;
+            font-weight: 800;
+            font-size: 12px;
         }
 
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { border: 1px solid #eee; padding: 10px; vertical-align: top; }
-        th { background: #fafafa; color: #2c3e50; text-align: left; }
+        th, td { border: 1px solid var(--border); padding: 10px; vertical-align: top; }
+        th { background: #f8fafc; color: #0f172a; text-align: left; }
 
-        .mini-note { color: #7f8c8d; font-size: 13px; margin-top: 6px; }
+        .mini-note { color: var(--muted); font-size: 13px; margin-top: 6px; }
         .list { margin: 8px 0 0 18px; }
         .list li { margin: 6px 0; }
+
+        /* back 链接区域不强改（你说后面返回不用调整） */
+        .back { display: inline-block; margin-top: 20px; color: #7f8c8d; text-decoration: none; }
+        .back:hover { text-decoration: underline; }
     </style>
 </head>
+
 <body>
+<div class="toefl-shell">
     <h1>{{ task.name }}</h1>
 
     <!-- 1. 题目（始终显示） -->
     <div class="section">
         <h2>阅读文本</h2>
-        <p>{{ task.readingtext|default:"无" }}</p>
+        <div class="reading-box">
+            <p>{{ task.readingtext|default:"无" }}</p>
+        </div>
     </div>
 
     <!-- 2. 录音区域 -->
     <div class="section" id="recordSection">
         <h2>请回答（45秒）</h2>
-        <p>点击“开始录音”后，你有 45 秒时间回答。</p>
-        <button id="startBtn" class="btn">开始录音</button>
-        <span id="timer" class="timer hidden">剩余: <span id="countdown">45</span> 秒</span>
-        <button id="stopBtn" class="btn btn-secondary hidden">提前结束</button>
+        <div class="instruction">点击“开始录音”后，你有 45 秒时间回答。</div>
+        <div style="margin-top: 10px;">
+            <button id="startBtn" class="btn">开始录音</button>
+            <span id="timer" class="timer hidden">剩余: <span id="countdown">45</span> 秒</span>
+            <button id="stopBtn" class="btn btn-secondary hidden">提前结束</button>
+        </div>
         <div id="recordStatus" style="margin-top: 10px;"></div>
     </div>
 
@@ -131,6 +269,7 @@
         <p>{{ task.reasontext|default:"无" }}</p>
     </div>
 
+    <!-- 后面的返回显示不调整 -->
     <a href="{% url 'spoken_ai:task1_list' %}" class="back">← 返回任务列表</a>
 
     <script>
@@ -488,5 +627,6 @@
             }
         }
     </script>
+</div>
 </body>
 </html>

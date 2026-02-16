@@ -37,4 +37,10 @@ urlpatterns = [
     path('followup/',views.followup,name='followup'),
     path("followup/chat/", views.solve_followup, name="followup_chat"),  # 接收 AJAX
     path('password_reset/', views.password_reset, name='password_reset'),  # 找回密码页面
-]  
+
+    # 用户做题记录
+    path('toefl/records/', views.toefl_records, name='toefl_records'),
+    path('toefl/records/<int:record_id>/', views.toefl_record_detail, name='toefl_record_detail'),
+    path('toefl/records/<int:record_id>/status/', views.update_record_status, name='update_record_status'),
+    path('toefl/records/<int:record_id>/note/', views.add_record_note, name='add_record_note'),
+]

@@ -6,282 +6,368 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ task.name }} | TOEFL Task4</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        :root{
+            --bg: #f3f5f7;
+            --card: #ffffff;
+            --border: #e6e9ee;
+            --text: #1f2d3d;
+            --muted: #667085;
+            --primary: #1b4f9c;
+            --primary-2: #2f6fd6;
+            --reading-bg: #f6f8fb;
+            --shadow: 0 8px 24px rgba(16,24,40,0.06);
+            --radius: 14px;
+
+            --danger-bg: #fff1f0;
+            --danger-bd: #ffd6d1;
+            --danger: #b42318;
+
+            --info-bg: #f8fbff;
+            --info-bd: #dbeafe;
+            --info: #0b3b7a;
         }
 
-        body {
-            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
-            background: linear-gradient(135deg, #f7f5ff 0%, #e6f0ff 100%);
-            color: #333;
-            line-height: 1.6;
-            padding: 20px;
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body{
+            font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.75;
+            padding: 34px 18px;
             min-height: 100vh;
         }
 
-        .container {
-            max-width: 900px;
+        /* 考试界面容器（与 Task1/2/3 对齐） */
+        .toefl-shell{
+            max-width: 980px;
             margin: 0 auto;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 26px 26px 18px;
         }
 
-        header {
-            text-align: center;
-            padding: 30px 20px;
-            margin-bottom: 30px;
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+        header{
             position: relative;
-            overflow: hidden;
+            padding: 0 0 14px;
+            margin-bottom: 18px;
+            border-bottom: 1px solid var(--border);
         }
 
-        header::before {
+        header::before{
             content: "";
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 6px;
-            background: linear-gradient(90deg, #2980b9, #3498db, #8e44ad);
+            top: -26px;
+            left: -26px;
+            right: -26px;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--primary-2));
         }
 
-        h1 {
-            font-size: 2rem;
-            color: #2c3e50;
-            margin-bottom: 12px;
+        h1{
+            font-size: 26px;
+            color: var(--primary);
+            letter-spacing: 0.2px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
+        h1 i{ color: var(--primary-2); }
 
-        .section {
-            background: white;
-            border-radius: 14px;
-            padding: 24px;
-            margin-bottom: 24px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
-        }
+        .section{ margin: 18px 0; }
 
-        .section h2 {
-            font-size: 1.4rem;
-            color: #2c3e50;
-            margin-bottom: 16px;
+        .section h2{
+            color: #0f172a;
+            font-size: 18px;
+            margin-bottom: 10px;
             display: flex;
             align-items: center;
             gap: 10px;
         }
 
-        .section h2 i {
-            color: #2980b9;
+        .section h2::before{
+            content:"";
+            width: 6px;
+            height: 18px;
+            border-radius: 999px;
+            background: var(--primary-2);
+            display: inline-block;
         }
 
-        .section-content {
-            background: #f8fafc;
-            padding: 16px;
-            border-radius: 10px;
-            border-left: 4px solid #2980b9;
+        .section h2 i{ color: var(--primary); }
+
+        /* 内容框：问题/隐藏答案/听力文本统一 */
+        .content-box{
+            background: var(--reading-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 14px 16px;
+            position: relative;
             white-space: pre-wrap;
             word-wrap: break-word;
-            font-size: 1.05rem;
-            line-height: 1.7;
+            font-size: 1.02rem;
+            line-height: 1.8;
         }
 
-        .audio-player {
-            margin-top: 12px;
+        .content-box[data-label]::before{
+            content: attr(data-label);
+            position: absolute;
+            top: -10px;
+            left: 14px;
+            background: var(--card);
+            padding: 0 10px;
+            font-size: 12px;
+            color: var(--muted);
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            line-height: 20px;
+            height: 20px;
+            display: inline-flex;
+            align-items: center;
         }
 
-        .hidden-content {
-            display: none;
+        .instruction{
+            background: var(--info-bg);
+            border: 1px solid var(--info-bd);
+            border-radius: 12px;
+            padding: 12px 14px;
+            color: var(--info);
+            margin-top: 6px;
         }
 
-        .btn {
-            background: linear-gradient(135deg, #3498db, #2980b9);
+        .audio-player{ margin-top: 10px; }
+        audio{ width: 100%; height: 44px; }
+
+        .btn{
+            padding: 10px 16px;
+            margin: 6px 8px 6px 0;
+            background: var(--primary);
             color: white;
-            border: none;
-            padding: 10px 20px;
-            font-size: 1rem;
-            border-radius: 8px;
+            border: 1px solid rgba(0,0,0,0.02);
+            border-radius: 10px;
             cursor: pointer;
+            font-weight: 600;
+            letter-spacing: 0.2px;
+            box-shadow: 0 2px 8px rgba(27,79,156,0.18);
+            transition: transform .05s ease, background .15s ease;
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            transition: opacity 0.2s;
+        }
+        .btn:hover{ background: #163f7a; }
+        .btn:active{ transform: translateY(1px); }
+
+        .btn-secondary{
+            background: #f2f4f7;
+            color: #344054;
+            border: 1px solid var(--border);
+            box-shadow: none;
+        }
+        .btn-secondary:hover{ background: #e9edf2; }
+
+        .btn-reveal{
+            background: #16794c;
+            box-shadow: 0 2px 8px rgba(22,121,76,0.18);
+        }
+        .btn-reveal:hover{ background:#115f3b; }
+
+        .hidden{ display: none; }
+        .hidden-content{ display: none; margin-top: 14px; }
+
+        .timer{
+            font-weight: 800;
+            color: var(--danger);
+            background: var(--danger-bg);
+            border: 1px solid var(--danger-bd);
+            padding: 6px 10px;
+            border-radius: 999px;
+            margin-left: 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
         }
 
-        .btn:hover {
-            opacity: 0.9;
+        textarea{
+            width: 100%;
+            min-height: 130px;
+            resize: vertical;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            padding: 12px 12px;
+            font-family: inherit;
+            background: #fff;
+            box-shadow: 0 1px 0 rgba(16,24,40,0.02);
         }
 
-        .btn-reveal {
-            margin-top: 16px;
-            background: linear-gradient(135deg, #27ae60, #2ecc71);
+        #pdfLink{
+            text-decoration: none;
+            color: var(--primary);
+            font-weight: 700;
         }
+        #pdfLink:hover{ text-decoration: underline; }
 
-        .btn-secondary {
-            background: #7f8c8d;
+        /* ✅ Task1 风格评分展示（用于更好地显示 feedback） */
+        .score-row { display: flex; gap: 12px; flex-wrap: wrap; margin: 10px 0 0; }
+        .score-badge {
+            background: #eef4ff;
+            border: 1px solid #d6e4ff;
+            color: #193b7a;
+            padding: 8px 10px;
+            border-radius: 10px;
+            font-weight: 700;
         }
-
-        .btn-secondary:hover {
-            background: #95a5a6;
+        .dim-card {
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 14px;
+            margin: 12px 0;
+            background: #fff;
+            box-shadow: 0 2px 10px rgba(16,24,40,0.04);
         }
+        .dim-title { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+        .dim-title h3 { margin: 0; color: #0f172a; font-size: 17px; }
+        .dim-score {
+            background: #fff7ed;
+            border: 1px solid #fed7aa;
+            color: #9a3412;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-weight: 800;
+            font-size: 12px;
+        }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid var(--border); padding: 10px; vertical-align: top; }
+        th { background: #f8fafc; color: #0f172a; text-align: left; }
+        .mini-note { color: var(--muted); font-size: 13px; margin-top: 6px; }
+        .list { margin: 8px 0 0 18px; }
+        .list li { margin: 6px 0; }
 
-        .back-link {
+        .back-link{
             display: inline-block;
             margin-top: 20px;
             color: #7f8c8d;
             text-decoration: none;
             font-weight: 600;
         }
-
-        .back-link:hover {
-            color: #3498db;
-            text-decoration: underline;
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        .timer {
-            font-weight: bold;
-            color: #e74c3c;
-            margin-left: 10px;
-        }
-
-        textarea {
-            width: 100%;
-            box-sizing: border-box;
-            min-height: 120px;
-            resize: vertical;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-            padding: 10px;
-            font-family: inherit;
-            background: #f8fafc;
-        }
-
-        #feedbackContent p {
-            margin-bottom: 8px;
-        }
-
-        #pdfLink {
-            text-decoration: none;
-            color: #2980b9;
-            font-weight: 600;
-        }
-
-        #pdfLink:hover {
-            text-decoration: underline;
-        }
+        .back-link:hover{ color: var(--primary-2); text-decoration: underline; }
 
         @media (max-width: 600px) {
-            .section {
-                padding: 18px;
-            }
-            h1 {
-                font-size: 1.7rem;
-            }
-            .section h2 {
-                font-size: 1.25rem;
-            }
+            .toefl-shell { padding: 18px 16px 14px; }
+            h1 { font-size: 22px; }
+            .section h2 { font-size: 16px; }
         }
     </style>
 </head>
+
 <body>
-    <div class="container">
-        <header>
-            <h1><i class="fas fa-microphone-alt"></i> {{ task.name }}</h1>
-        </header>
+<div class="toefl-shell">
+    <header>
+        <h1><i class="fas fa-microphone-alt"></i> {{ task.name }}</h1>
+    </header>
 
-        <!-- 问题 -->
-        <div class="section">
-            <h2><i class="fas fa-question-circle"></i> 问题</h2>
-            <div class="section-content">
-                {{ task.questiontext|default:"无问题描述" }}
-            </div>
+    <!-- 问题 -->
+    <div class="section">
+        <h2><i class="fas fa-question-circle"></i> 问题</h2>
+        <div class="content-box" data-label="Question">
+            {{ task.questiontext|default:"无问题描述" }}
         </div>
+    </div>
 
-        <!-- 讲座音频 -->
-        <div class="section">
-            <h2><i class="fas fa-university"></i> 听力材料（学术讲座）</h2>
-            <div class="audio-player">
-                {% if task.audio %}
-                    <audio controls style="width: 100%; height: 50px;">
-                        <source src="{{ task.audio.url }}" type="audio/mp4">
-                        <source src="{{ task.audio.url }}" type="audio/mpeg">
-                        您的浏览器不支持音频播放。
-                    </audio>
-                {% else %}
-                    <p style="color: #e74c3c;">⚠️ 未上传听力音频</p>
-                {% endif %}
-            </div>
+    <!-- 讲座音频 -->
+    <div class="section">
+        <h2><i class="fas fa-university"></i> 听力材料（学术讲座）</h2>
+        <div class="audio-player">
+            {% if task.audio %}
+                <audio controls>
+                    <source src="{{ task.audio.url }}" type="audio/mp4">
+                    <source src="{{ task.audio.url }}" type="audio/mpeg">
+                    您的浏览器不支持音频播放。
+                </audio>
+            {% else %}
+                <p style="color: #b42318; margin-top: 6px;">⚠️ 未上传听力音频</p>
+            {% endif %}
         </div>
+    </div>
 
-        <!-- 录音与作答 -->
-        <div class="section" id="recordSection">
-            <h2><i class="fas fa-microphone"></i> 请回答（60秒）</h2>
-            <p>点击“开始录音”后，你有 60 秒时间根据讲座内容总结学术概念及其例子。</p>
+    <!-- 录音与作答 -->
+    <div class="section" id="recordSection">
+        <h2><i class="fas fa-microphone"></i> 请回答（60秒）</h2>
+        <div class="instruction">点击“开始录音”后，你有 60 秒时间根据讲座内容总结学术概念及其例子。</div>
+
+        <div style="margin-top: 10px;">
             <button id="startBtn" class="btn"><i class="fas fa-record-vinyl"></i> 开始录音</button>
             <span id="timer" class="timer hidden">剩余: <span id="countdown">60</span> 秒</span>
             <button id="stopBtn" class="btn btn-secondary hidden">提前结束</button>
-            <div id="recordStatus" style="margin-top: 10px;"></div>
         </div>
+        <div id="recordStatus" style="margin-top: 10px;"></div>
+    </div>
 
-        <!-- 转写文本编辑区 -->
-        <div class="section hidden" id="editSection">
-            <h2><i class="fas fa-keyboard"></i> 你的回答（可编辑）</h2>
-            <textarea id="transcriptionText" placeholder="语音转写结果将显示在这里..."></textarea>
-            <br><br>
-            <button id="confirmBtn" class="btn">
-                <i class="fas fa-wand-magic-sparkles"></i> 确认最终答案并生成报告
-            </button>
-        </div>
+    <!-- 转写文本编辑区 -->
+    <div class="section hidden" id="editSection">
+        <h2><i class="fas fa-keyboard"></i> 你的回答（可编辑）</h2>
+        <textarea id="transcriptionText" placeholder="语音转写结果将显示在这里..."></textarea>
+        <br><br>
+        <button id="confirmBtn" class="btn">
+            <i class="fas fa-wand-magic-sparkles"></i> 确认最终答案并生成报告
+        </button>
+    </div>
 
-        <!-- AI 反馈 + PDF 下载 -->
-        <div class="section hidden" id="feedbackSection">
-            <h2><i class="fas fa-chart-line"></i> AI 评分报告</h2>
-            <div id="feedbackContent"></div>
-            <br>
-            <a id="pdfLink" target="_blank" style="display:none;">📥 下载 PDF 报告</a>
-            <br><br>
-            <button id="followupBtn" class="btn btn-secondary hidden">
-                <i class="fas fa-comments"></i> 进入追问与精讲
-            </button>
-        </div>
+    <!-- AI 反馈 + PDF 下载 -->
+    <div class="section hidden" id="feedbackSection">
+        <h2><i class="fas fa-chart-line"></i> AI 评分报告</h2>
+        <div id="feedbackContent"></div>
+        <br>
+        <a id="pdfLink" target="_blank" style="display:none;">📥 下载 PDF 报告</a>
+        <br><br>
+        <button id="followupBtn" class="btn btn-secondary hidden">
+            <i class="fas fa-comments"></i> 进入追问与精讲
+        </button>
+    </div>
 
-        <!-- 参考答案与思路 -->
-        <div class="section">
-            <button id="toggleAnswersBtn" class="btn btn-reveal">
-                <i class="fas fa-eye"></i> 显示参考答案与解题思路
-            </button>
+    <!-- 参考答案与思路 -->
+    <div class="section">
+        <button id="toggleAnswersBtn" class="btn btn-reveal">
+            <i class="fas fa-eye"></i> 显示参考答案与解题思路
+        </button>
 
-            <div id="hiddenAnswers" class="hidden-content">
+        <div id="hiddenAnswers" class="hidden-content">
+            <div class="section" style="margin-top: 14px;">
                 <h2><i class="fas fa-lightbulb"></i> 参考答案1</h2>
-                <div class="section-content">
+                <div class="content-box" data-label="Answer 1">
                     {{ task.answertext1|default:"无答案" }}
                 </div>
+            </div>
 
-                <h2 style="margin-top: 20px;"><i class="fas fa-lightbulb"></i> 参考答案2</h2>
-                <div class="section-content">
+            <div class="section">
+                <h2><i class="fas fa-lightbulb"></i> 参考答案2</h2>
+                <div class="content-box" data-label="Answer 2">
                     {{ task.answertext2|default:"无答案" }}
                 </div>
+            </div>
 
-                <h2 style="margin-top: 20px;"><i class="fas fa-graduation-cap"></i> 解题思路</h2>
-                <div class="section-content">
+            <div class="section">
+                <h2><i class="fas fa-graduation-cap"></i> 解题思路</h2>
+                <div class="content-box" data-label="Reasoning">
                     {{ task.reasontext|default:"无解题思路" }}
                 </div>
-                <h2 style="margin-top: 20px;"><i class="fas fa-headphones"></i> 听力文本</h2>
-                <div class="section-content">
-                 {{ task.listeningtext|default:"无听力文本" }}
-               </div>
+            </div>
 
+            <div class="section">
+                <h2><i class="fas fa-headphones"></i> 听力文本</h2>
+                <div class="content-box" data-label="Listening Transcript">
+                    {{ task.listeningtext|default:"无听力文本" }}
+                </div>
             </div>
         </div>
-
-        <a href="{% url 'spoken_ai:task4_list' %}" class="back-link">
-            ← 返回 Task4 题库列表
-        </a>
     </div>
+
+    <a href="{% url 'spoken_ai:task4_list' %}" class="back-link">
+        ← 返回 Task4 题库列表
+    </a>
 
     <script>
         let mediaRecorder;
@@ -294,15 +380,217 @@
         document.getElementById('confirmBtn').addEventListener('click', confirmAnswer);
         document.getElementById('toggleAnswersBtn').addEventListener('click', toggleAnswers);
 
+        /* ✅ 安全渲染工具（防 XSS、兼容数组/字符串） */
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+        function safeArray(x) { if (!x) return []; return Array.isArray(x) ? x : [x]; }
+
+        function prettyDimName(dim) {
+            const map = {
+                delivery: "Delivery（表达）",
+                language_use: "Language Use（语言）",
+                topic_development: "Topic Development（内容）"
+            };
+            return map[dim] || dim;
+        }
+
+        function renderDimensionFeedback(dimKey, dimObj) {
+            const score = dimObj?.score ?? 'N/A';
+            const problems = safeArray(dimObj?.problems);
+            const evidence = safeArray(dimObj?.evidence);
+            const fixes = safeArray(dimObj?.fixes);
+
+            const maxLen = Math.max(problems.length, evidence.length, fixes.length, 1);
+            let rows = '';
+            for (let i = 0; i < maxLen; i++) {
+                rows += `
+                    <tr>
+                        <td>${escapeHtml(problems[i] ?? '')}</td>
+                        <td>${escapeHtml(evidence[i] ?? '')}</td>
+                        <td>${escapeHtml(fixes[i] ?? '')}</td>
+                    </tr>
+                `;
+            }
+
+            return `
+                <div class="dim-card">
+                    <div class="dim-title">
+                        <h3>${escapeHtml(prettyDimName(dimKey))}</h3>
+                        <span class="dim-score">Score: ${escapeHtml(score)}</span>
+                    </div>
+                    <div class="mini-note">每条建议都对应「问题 → 证据 → 改进」。</div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width: 34%;">Problems / Improvements</th>
+                                <th style="width: 33%;">Evidence（证据）</th>
+                                <th style="width: 33%;">Fixes（怎么改）</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function renderSentences(items) {
+            const arr = safeArray(items);
+            const lis = arr.map(s => `<li>${escapeHtml(s)}</li>`).join('');
+            return `
+                <div class="dim-card">
+                    <div class="dim-title"><h3>Recommended Sentences（推荐句子）</h3></div>
+                    <ol class="list">${lis || '<li>无</li>'}</ol>
+                </div>
+            `;
+        }
+
+        function renderFeedback(feedback) {
+            if (!feedback || typeof feedback !== 'object') {
+                return `<p>反馈格式异常：无法解析。</p>`;
+            }
+
+            // A) Task1 风格（若后端升级也能直接显示）
+            if (feedback.dimension_feedback || feedback.dimension_scores || feedback.overall_score !== undefined) {
+                const overall = feedback.overall_score ?? 'N/A';
+                const ds = feedback.dimension_scores || {};
+                const df = feedback.dimension_feedback || {};
+
+                let html = `
+                    <div class="score-row">
+                        <div class="score-badge">Overall Score: ${escapeHtml(overall)}</div>
+                        <div class="score-badge">Delivery: ${escapeHtml(ds.delivery ?? 'N/A')}</div>
+                        <div class="score-badge">Language Use: ${escapeHtml(ds.language_use ?? 'N/A')}</div>
+                        <div class="score-badge">Topic Dev: ${escapeHtml(ds.topic_development ?? 'N/A')}</div>
+                    </div>
+                `;
+
+                ["delivery", "language_use", "topic_development"].forEach(dim => {
+                    html += renderDimensionFeedback(dim, df?.[dim] || {});
+                });
+
+                // 可选 correction
+                if (feedback.correction !== undefined && feedback.correction !== null) {
+                    const corr = (typeof feedback.correction === 'string')
+                        ? feedback.correction
+                        : (feedback.correction.text || feedback.correction.answer || feedback.correction.content || JSON.stringify(feedback.correction));
+                    html += `
+                        <div class="dim-card">
+                            <div class="dim-title"><h3>Correction（改写后优秀答案）</h3></div>
+                            <p style="background:#f9f9f9;padding:12px;border-left:4px solid #2ecc71;white-space:pre-wrap;word-wrap:break-word;margin-top:10px;">
+                                ${escapeHtml((corr || '').trim() || '无')}
+                            </p>
+                            <div class="mini-note">基于你的回答给出更地道、更高分的版本。</div>
+                        </div>
+                    `;
+                }
+
+                if (feedback.recommended_sentences !== undefined) {
+                    html += renderSentences(feedback.recommended_sentences);
+                }
+
+                return html;
+            }
+
+            // B) Task4 老格式（score/issues/reason/answer/phrases/sentences）
+            const score = feedback.score ?? 'N/A';
+            const issues = feedback.issues ?? '';
+            const reason = feedback.reason ?? '';
+            const answer = feedback.answer ?? '';
+            const phrases = safeArray(feedback.phrases).filter(Boolean);
+            const sentences = feedback.sentences ?? '';
+
+            let html = `
+                <div class="score-row">
+                    <div class="score-badge">Score: ${escapeHtml(score)}</div>
+                </div>
+
+                <div class="dim-card">
+                    <div class="dim-title"><h3>Issues（问题）</h3></div>
+                    <p style="background:#f8fafc;padding:12px;border-left:4px solid #1b4f9c;white-space:pre-wrap;word-wrap:break-word;margin-top:10px;">
+                        ${escapeHtml(issues || '无')}
+                    </p>
+                </div>
+
+                <div class="dim-card">
+                    <div class="dim-title"><h3>Suggestions（建议）</h3></div>
+                    <p style="background:#f8fafc;padding:12px;border-left:4px solid #2f6fd6;white-space:pre-wrap;word-wrap:break-word;margin-top:10px;">
+                        ${escapeHtml(reason || '无')}
+                    </p>
+                </div>
+
+                <div class="dim-card">
+                    <div class="dim-title"><h3>Reference Answer（参考答案）</h3></div>
+                    <p style="background:#f8fafc;padding:12px;border-left:4px solid #16794c;white-space:pre-wrap;word-wrap:break-word;margin-top:10px;">
+                        ${escapeHtml(answer || '无')}
+                    </p>
+                </div>
+            `;
+
+            if (phrases.length) {
+                html += `
+                    <div class="dim-card">
+                        <div class="dim-title"><h3>Recommended Phrases（推荐短语）</h3></div>
+                        <p class="mini-note">建议挑 2–3 个自然融入总结/举例部分。</p>
+                        <p style="background:#f9f9f9;padding:12px;border-left:4px solid #e67e22;white-space:pre-wrap;word-wrap:break-word;margin-top:10px;">
+                            ${escapeHtml(phrases.join(', '))}
+                        </p>
+                    </div>
+                `;
+            }
+
+            const sentenceArr = Array.isArray(sentences) ? sentences : (sentences ? [sentences] : []);
+            if (sentenceArr.length) {
+                html += renderSentences(sentenceArr);
+            }
+
+            return html;
+        }
+
+        function buildFollowupText(feedback) {
+            // Task1 风格
+            if (feedback && (feedback.dimension_feedback || feedback.dimension_scores)) {
+                const df = feedback?.dimension_feedback || {};
+                const dims = ["delivery", "language_use", "topic_development"];
+                let issues = [];
+                let reasons = [];
+
+                dims.forEach(dim => {
+                    const problems = safeArray(df?.[dim]?.problems);
+                    const fixes = safeArray(df?.[dim]?.fixes);
+                    problems.slice(0, 2).forEach(p => issues.push(`[${prettyDimName(dim)}] ${p}`));
+                    fixes.slice(0, 2).forEach(f => reasons.push(`[${prettyDimName(dim)}] ${f}`));
+                });
+
+                const corr = feedback?.correction;
+                const corrText = (typeof corr === 'string')
+                    ? corr
+                    : (corr?.text || corr?.answer || corr?.content || '');
+
+                return { issues: issues.join('\n'), reason: reasons.join('\n'), answer: (corrText || '').trim() };
+            }
+
+            // Task4 老格式
+            return {
+                issues: (feedback?.issues ?? '') + '',
+                reason: (feedback?.reason ?? '') + '',
+                answer: (feedback?.answer ?? '') + ''
+            };
+        }
+
         function startRecording() {
             navigator.mediaDevices.getUserMedia({ audio: true })
                 .then(stream => {
                     mediaRecorder = new MediaRecorder(stream);
                     audioChunks = [];
 
-                    mediaRecorder.ondataavailable = event => {
-                        audioChunks.push(event.data);
-                    };
+                    mediaRecorder.ondataavailable = event => { audioChunks.push(event.data); };
 
                     mediaRecorder.onstop = () => {
                         const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
@@ -316,15 +604,12 @@
                     document.getElementById('stopBtn').classList.remove('hidden');
                     document.getElementById('recordStatus').innerText = '正在录音...';
 
-                    // Task4 作答时间也是 60 秒
                     let timeLeft = 60;
                     document.getElementById('countdown').innerText = timeLeft;
                     countdownInterval = setInterval(() => {
                         timeLeft--;
                         document.getElementById('countdown').innerText = timeLeft;
-                        if (timeLeft <= 0) {
-                            stopRecording();
-                        }
+                        if (timeLeft <= 0) stopRecording();
                     }, 1000);
                 })
                 .catch(err => {
@@ -346,13 +631,10 @@
             const formData = new FormData();
             formData.append('audio', blob, 'answer.webm');
 
-            // 通用接口，或可单独为 Task4 定义
             fetch(`process_task_audio/`, {
                 method: 'POST',
                 body: formData,
-                headers: {
-                    'X-CSRFToken': '{{ csrf_token }}'
-                }
+                headers: { 'X-CSRFToken': '{{ csrf_token }}' }
             })
             .then(response => response.json())
             .then(data => {
@@ -377,7 +659,6 @@
                 return;
             }
 
-            // 调用 Task4 分析接口，注意 URL 要匹配你的后端
             fetch(`analyse_task4/`, {
                 method: 'POST',
                 headers: {
@@ -389,20 +670,17 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    let html = `<p><strong>评分:</strong> ${data.feedback.score || 'N/A'}</p>`;
-                    html += `<p><strong>问题:</strong> ${data.feedback.issues || ''}</p>`;
-                    html += `<p><strong>建议:</strong> ${data.feedback.reason || ''}</p>`;
-                    html += `<p><strong>参考答案:</strong> ${data.feedback.answer || ''}</p>`;
-                    if (data.feedback.phrases) {
-                        html += `<p><strong>推荐短语:</strong> ${data.feedback.phrases.join(', ')}</p>`;
-                    }
-                    html += `<p><strong>推荐句子:</strong> ${data.feedback.sentences || ''}</p>`;
-                    document.getElementById('feedbackContent').innerHTML = html;
+                    const feedback = data.feedback || {};
+
+                    // ✅ 用统一渲染器
+                    document.getElementById('feedbackContent').innerHTML = renderFeedback(feedback);
 
                     if (data.pdf_url) {
                         const link = document.getElementById('pdfLink');
                         link.href = data.pdf_url;
                         link.style.display = 'inline';
+                    } else {
+                        document.getElementById('pdfLink').style.display = 'none';
                     }
 
                     document.getElementById('feedbackSection').classList.remove('hidden');
@@ -412,15 +690,15 @@
 
                     followupBtn.onclick = function () {
                         const baseUrl = "{% url 'spoken_ai:followup' %}";
+                        const pack = buildFollowupText(feedback);
 
                         const params = new URLSearchParams({
                             task_name: "{{ task.name|default:''|escapejs }}",
-                            // 注意：Task4 没有 readingtext，所以不传
                             questiontext: "{{ task.questiontext|default:''|escapejs }}",
                             student_answer: finalText,
-                            issues: data.feedback.issues || '',
-                            reason: data.feedback.reason || '',
-                            answer: data.feedback.answer || ''
+                            issues: pack.issues || '',
+                            reason: pack.reason || '',
+                            answer: pack.answer || ''
                         });
 
                         window.location.href = baseUrl + "?" + params.toString();
@@ -438,6 +716,7 @@
         function toggleAnswers() {
             const hiddenDiv = document.getElementById('hiddenAnswers');
             const btn = document.getElementById('toggleAnswersBtn');
+
             if (hiddenDiv.style.display === 'none' || hiddenDiv.style.display === '') {
                 hiddenDiv.style.display = 'block';
                 btn.innerHTML = '<i class="fas fa-eye-slash"></i> 隐藏参考答案';
@@ -447,5 +726,6 @@
             }
         }
     </script>
+</div>
 </body>
 </html>

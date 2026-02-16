@@ -52,7 +52,6 @@
       color: var(--text);
     }
 
-    /* 页面更宽，聊天框更大 */
     .wrap{
       max-width: 1200px;
       margin: 28px auto;
@@ -134,7 +133,6 @@
       overflow:hidden;
     }
 
-    /* 两栏布局：左更大（聊天优先） */
     .main{
       display:grid;
       grid-template-columns: 1.6fr .8fr;
@@ -155,7 +153,6 @@
       }
     }
 
-    /* 聊天框更大：高度提升 */
     .chat-box{
       height: 640px;
       overflow:auto;
@@ -171,7 +168,6 @@
       .chat-box{ height: 560px; }
     }
 
-    /* 滚动条更干净 */
     .chat-box::-webkit-scrollbar{ width: 10px; }
     .chat-box::-webkit-scrollbar-thumb{
       background: rgba(15,23,42,.18);
@@ -296,7 +292,6 @@
     }
     .btn-danger:hover{ background: rgba(180,35,24,.04); }
 
-    /* 系统音频容器也做成黑白风 */
     .system-audio-container{
       margin-top: 0;
       padding: 10px 12px;
@@ -314,7 +309,6 @@
     }
     audio.audio-player{ width: 100%; height: 34px; }
 
-    /* debug */
     .debug-head{
       display:flex;
       justify-content:space-between;
@@ -338,6 +332,25 @@
       font-size: 12px;
       color: rgba(15,23,42,.78);
     }
+
+    /* === 文字折叠：只折叠“系统文字”，用户文字直接显示 === */
+    .text-toggle{
+      display:none;
+      margin-top: 8px;
+    }
+    .btn-mini{
+      width:auto;
+      padding: 8px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 750;
+      cursor: pointer;
+      border: 1px solid rgba(15,23,42,.14);
+      background: #ffffff;
+      color: #0b0f19;
+      align-self:flex-start;
+    }
+    .btn-mini:hover{ background: rgba(15,23,42,.03); }
   </style>
 </head>
 
@@ -348,7 +361,7 @@
         <div class="logo" aria-hidden="true"></div>
         <div class="title">
           <h1>语音对话助手</h1>
-          <p>白色明亮 · 黑白配 · 对话框更大</p>
+          <p>默认显示：用户文字 + 音频；可选择展开系统文字</p>
         </div>
       </div>
 
@@ -360,7 +373,6 @@
 
     <div class="container">
       <div class="main">
-        <!-- 左：聊天 -->
         <section class="chat-area">
           <div class="chat-box" id="chat-box"></div>
           <div class="meta">
@@ -369,11 +381,10 @@
           </div>
         </section>
 
-        <!-- 右：控制 -->
         <aside class="controls">
           <div class="panel">
             <h3>录音控制</h3>
-            <p>开始录音后说话，停止录音会自动上传并显示文本与语音回复。</p>
+            <p>开始录音后说话，停止录音会自动上传并显示：用户文字 + 语音回复（系统文字可展开）。</p>
 
             <div class="btn-row">
               <button class="btn btn-primary" id="start-recording">开始录音</button>
@@ -462,6 +473,39 @@
       }
     }
 
+    // === 新增：只折叠“系统文字”，用户文字直接显示 ===
+    function createSystemTextToggle({ shortReply }) {
+      const wrapper = document.createElement('div');
+      wrapper.style.display = 'flex';
+      wrapper.style.flexDirection = 'column';
+      wrapper.style.gap = '8px';
+      wrapper.style.maxWidth = '78%';
+      wrapper.style.alignSelf = 'flex-start';
+
+      const toggleBtn = document.createElement('button');
+      toggleBtn.className = 'btn-mini';
+      toggleBtn.textContent = '查看系统文字';
+
+      const textBox = document.createElement('div');
+      textBox.className = 'text-toggle';
+
+      const sysText = document.createElement('div');
+      sysText.classList.add('msg', 'system-msg');
+      sysText.textContent = shortReply;
+
+      textBox.appendChild(sysText);
+
+      toggleBtn.addEventListener('click', () => {
+        const isHidden = textBox.style.display === 'none' || textBox.style.display === '';
+        textBox.style.display = isHidden ? 'block' : 'none';
+        toggleBtn.textContent = isHidden ? '隐藏系统文字' : '查看系统文字';
+      });
+
+      wrapper.appendChild(toggleBtn);
+      wrapper.appendChild(textBox);
+      return wrapper;
+    }
+
     // 请求麦克风权限并开始录音
     startRecordingBtn.addEventListener('click', async () => {
       try {
@@ -481,14 +525,13 @@
           const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
           addDebugMessage(`音频Blob创建完成，大小: ${audioBlob.size} 字节`);
 
-          // 用户消息占位
+          // 占位：先显示用户气泡（稍后替换成转写）
           const userMsg = document.createElement('div');
           userMsg.classList.add('msg', 'user-msg');
           userMsg.textContent = '正在识别...';
           chatBox.appendChild(userMsg);
           chatBox.scrollTop = chatBox.scrollHeight;
 
-          // 上传音频到服务器
           const formData = new FormData();
           formData.append('audio', audioBlob, 'recording.wav');
 
@@ -530,16 +573,10 @@
             addDebugMessage(`识别结果: ${transcription}`, 'success');
             addDebugMessage(`系统回复: ${shortReply}`, 'success');
 
-            // 更新用户消息为识别内容
+            // ✅ 用户文字：直接显示（更新占位气泡）
             userMsg.textContent = transcription;
 
-            // 系统消息
-            const systemMsg = document.createElement('div');
-            systemMsg.classList.add('msg', 'system-msg');
-            systemMsg.textContent = shortReply;
-            chatBox.appendChild(systemMsg);
-
-            // 音频播放器
+            // 音频播放器（直接显示）
             if (audioReplyUrl) {
               const audioContainer = document.createElement('div');
               audioContainer.classList.add('system-audio-container');
@@ -553,6 +590,9 @@
               audioPlayer.controls = true;
               audioPlayer.src = audioReplyUrl;
 
+              // 尝试自动播放（可能被浏览器策略拦截）
+              audioPlayer.autoplay = true;
+
               audioPlayer.addEventListener('loadeddata', () => {
                 addDebugMessage('音频加载成功', 'success');
               });
@@ -564,7 +604,11 @@
               chatBox.appendChild(audioContainer);
             }
 
-            // 保存对话内容
+            // ✅ 系统文字：默认隐藏，可选择展开
+            const sysToggle = createSystemTextToggle({ shortReply });
+            chatBox.appendChild(sysToggle);
+
+            // 保存对话内容（生成报告用）
             conversation.push({
               user: transcription,
               system: shortReply,

@@ -3,242 +3,272 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>追问与精讲 - {{ task_name }}</title>
+
     <style>
-        :root {
-            --bg-gradient: linear-gradient(135deg, #f3f6ff, #fdfbff);
-            --card-bg: #ffffff;
-            --primary: #4c6fff;
-            --primary-dark: #3949ab;
-            --accent: #ff7aa2;
-            --text-main: #2c3e50;
-            --text-muted: #7f8c8d;
-            --border-soft: #e6ecf5;
-            --shadow-soft: 0 12px 30px rgba(15, 35, 95, 0.08);
-            --radius-lg: 18px;
+        :root{
+            --bg: #f3f5f7;
+            --card: #ffffff;
+            --border: #e6e9ee;
+            --text: #1f2d3d;
+            --muted: #667085;
+            --primary: #1b4f9c;
+            --primary-2: #2f6fd6;
+            --soft: #f6f8fb;
+            --shadow: 0 8px 24px rgba(16,24,40,0.06);
+            --radius: 14px;
+
+            --danger-bg: #fff1f0;
+            --danger-bd: #ffd6d1;
+            --danger: #b42318;
+
+            --info-bg: #f8fbff;
+            --info-bd: #dbeafe;
+            --info: #0b3b7a;
         }
 
-        * {
-            box-sizing: border-box;
-        }
-
-        body {
+        * { box-sizing: border-box; }
+        body{
             margin: 0;
-            padding: 0;
-            font-family: "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            background: var(--bg-gradient);
-            color: var(--text-main);
+            font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.75;
+            padding: 34px 18px;
+            min-height: 100vh;
         }
 
-        .page-wrapper {
-            max-width: 1200px;
-            margin: 32px auto;
-            padding: 0 20px 40px;
+        /* 与 Task 页面一致的外壳 */
+        .toefl-shell{
+            max-width: 1100px;
+            margin: 0 auto;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 22px 22px 18px;
         }
 
-        header {
+        .topbar{
+            position: relative;
+            padding-bottom: 14px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 16px;
+        }
+        .topbar::before{
+            content:"";
+            position: absolute;
+            top: -22px;
+            left: -22px;
+            right: -22px;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--primary-2));
+        }
+
+        .header-row{
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             justify-content: space-between;
-            margin-bottom: 24px;
+            gap: 12px;
         }
 
-        .title-block {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .title-block h1 {
-            margin: 0;
-            font-size: 24px;
+        .badge{
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 12px;
             font-weight: 700;
-            letter-spacing: 0.03em;
+            letter-spacing: .08em;
+            background: rgba(47,111,214,0.10);
+            color: var(--primary);
+        }
+
+        .title{
+            margin: 8px 0 0;
+            font-size: 22px;
+            color: var(--primary);
+            letter-spacing: .2px;
+        }
+
+        .subtitle{
+            margin-top: 4px;
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        .back-link{
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            color: #7f8c8d;
+            font-weight: 600;
+            padding: 8px 12px;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            background: #fff;
+            white-space: nowrap;
+        }
+        .back-link:hover{
+            color: var(--primary-2);
+            border-color: #d6e4ff;
+        }
+
+        /* 两列布局 */
+        .layout{
+            display: grid;
+            grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+            gap: 16px;
+            margin-top: 14px;
+        }
+
+        .card{
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: 0 2px 10px rgba(16,24,40,0.04);
+            padding: 16px;
+        }
+
+        .card-title{
             display: flex;
             align-items: center;
             gap: 10px;
-        }
-
-        .badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            padding: 4px 10px;
-            border-radius: 999px;
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            background: rgba(76, 111, 255, 0.08);
-            color: var(--primary);
-        }
-
-        .subtitle {
-            font-size: 13px;
-            color: var(--text-muted);
-        }
-
-        .back-link {
-            font-size: 13px;
-            color: var(--text-muted);
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            padding: 6px 10px;
-            border-radius: 999px;
-            background: rgba(255, 255, 255, 0.8);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
-        }
-
-        .back-link:hover {
-            color: var(--primary);
-        }
-
-        .layout {
-            display: grid;
-            grid-template-columns: minmax(0, 2fr) minmax(0, 2.2fr);
-            gap: 20px;
-        }
-
-        .card {
-            background: var(--card-bg);
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-soft);
-            padding: 18px 20px 20px;
-            border: 1px solid var(--border-soft);
-        }
-
-        .card-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 12px;
-        }
-
-        .card-title {
             font-size: 16px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            font-weight: 800;
+            color: #0f172a;
+            margin: 0 0 8px;
         }
-
-        .card-title span.icon {
-            width: 26px;
-            height: 26px;
-            border-radius: 9px;
+        .icon-pill{
+            width: 28px;
+            height: 28px;
+            border-radius: 10px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            font-size: 14px;
-            background: rgba(76, 111, 255, 0.08);
+            background: rgba(47,111,214,0.10);
             color: var(--primary);
+            font-size: 14px;
         }
 
-        .card-subtitle {
+        .card-subtitle{
             font-size: 12px;
-            color: var(--text-muted);
+            color: var(--muted);
+            margin-bottom: 10px;
         }
 
-        .section-block {
-            margin-top: 10px;
-        }
+        .section-block{ margin-top: 12px; }
 
-        .section-label {
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text-muted);
-            margin-bottom: 4px;
-            letter-spacing: 0.05em;
+        .section-label{
+            font-size: 12px;
+            font-weight: 800;
+            color: var(--muted);
+            letter-spacing: .08em;
             text-transform: uppercase;
+            margin-bottom: 6px;
         }
 
-        .content-box {
-            background: #f8f9ff;
+        .content-box{
+            background: var(--soft);
+            border: 1px solid var(--border);
             border-radius: 12px;
-            padding: 10px 12px;
-            border: 1px solid rgba(76,111,255,0.1);
+            padding: 12px 12px;
             font-size: 13px;
-            line-height: 1.7;
+            line-height: 1.75;
             white-space: pre-wrap;
             word-wrap: break-word;
         }
 
-        .content-box.highlight {
-            background: #fff7fb;
-            border-color: rgba(255,122,162,0.35);
+        .content-box.highlight{
+            background: #f8fbff;
+            border-color: #dbeafe;
         }
 
-        .pill-tag {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            padding: 3px 8px;
-            border-radius: 999px;
-            font-size: 11px;
-            background: rgba(0,0,0,0.03);
-            color: var(--text-muted);
+        .tips{
+            margin-top: 10px;
+            background: var(--info-bg);
+            border: 1px solid var(--info-bd);
+            color: var(--info);
+            border-radius: 12px;
+            padding: 10px 12px;
+            font-size: 13px;
         }
 
-        .pill-tag strong {
-            color: var(--primary);
-        }
-
-        .feedback-grid {
+        .feedback-grid{
             display: grid;
-            grid-template-columns: 1.1fr 1.4fr;
+            grid-template-columns: 1fr 1fr;
             gap: 10px;
             margin-top: 8px;
         }
 
-        .feedback-item {
-            background: #f9fbff;
-            border-radius: 10px;
-            padding: 8px 10px;
-            border: 1px solid rgba(230,236,245,0.9);
+        .feedback-item{
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 10px 10px;
             font-size: 13px;
-            line-height: 1.6;
+            line-height: 1.65;
         }
 
-        .feedback-item h4 {
-            margin: 0 0 4px;
+        .feedback-item h4{
+            margin: 0 0 6px;
             font-size: 12px;
-            font-weight: 600;
-            color: var(--primary-dark);
+            letter-spacing: .02em;
+            color: #0f172a;
         }
 
-        .feedback-tag-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            margin-top: 6px;
-        }
-
-        .feedback-tag-row .pill-tag {
-            background: rgba(76, 111, 255, 0.06);
-            color: var(--primary-dark);
-        }
-
-        .chat-card {
-            position: relative;
-            overflow: hidden;
+        /* Chat */
+        .chat-card{
             display: flex;
             flex-direction: column;
-            min-height: 420px;
+            min-height: 520px;
         }
 
-        .chat-header-extra {
-            font-size: 12px;
-            color: var(--text-muted);
+        .chat-meta{
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 10px;
         }
 
-        .chat-window {
-            margin-top: 10px;
+        .btn{
+            border: none;
+            cursor: pointer;
+            border-radius: 999px;
+            padding: 9px 14px;
+            font-size: 13px;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+
+        .btn-primary{
+            background: linear-gradient(135deg, var(--primary), var(--primary-2));
+            color: #fff;
+            box-shadow: 0 8px 18px rgba(47, 111, 214, 0.25);
+        }
+        .btn-primary:hover{ filter: brightness(1.03); }
+
+        .btn-secondary{
+            background: #f2f4f7;
+            border: 1px solid var(--border);
+            color: #344054;
+            box-shadow: none;
+        }
+        .btn-secondary:hover{ background: #e9edf2; }
+
+        .chat-window{
+            flex: 1;
             border-radius: 14px;
-            background: #f6f7ff;
+            background: #f8fbff;
+            border: 1px solid #dbeafe;
             padding: 12px;
-            border: 1px solid rgba(76,111,255,0.12);
-            height: 320px;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
@@ -246,160 +276,111 @@
             scroll-behavior: smooth;
         }
 
-        .message {
+        .message{
             max-width: 88%;
-            padding: 8px 10px;
+            padding: 9px 10px;
             border-radius: 12px;
             font-size: 13px;
-            line-height: 1.6;
-            position: relative;
+            line-height: 1.65;
             white-space: pre-wrap;
             word-wrap: break-word;
         }
 
-        .message.user {
-            align-self: flex-end;
-            background: linear-gradient(135deg, #4c6fff, #6c76ff);
-            color: #ffffff;
-            border-bottom-right-radius: 4px;
-        }
-
-        .message.agent {
-            align-self: flex-start;
-            background: #ffffff;
-            border-radius: 12px;
-            border-bottom-left-radius: 4px;
-            border: 1px solid rgba(208, 215, 240, 0.9);
-        }
-
-        .message-meta {
+        .message-meta{
             font-size: 11px;
-            color: var(--text-muted);
-            margin-bottom: 2px;
+            color: var(--muted);
+            margin-bottom: 4px;
             display: block;
         }
 
-        .chat-input-area {
-            margin-top: 12px;
+        .message.user{
+            align-self: flex-end;
+            background: linear-gradient(135deg, var(--primary), var(--primary-2));
+            color: #fff;
+            border-bottom-right-radius: 6px;
+        }
+
+        .message.agent{
+            align-self: flex-start;
+            background: #fff;
+            border: 1px solid var(--border);
+            border-bottom-left-radius: 6px;
+        }
+
+        .chat-input-area{
+            margin-top: 10px;
             display: grid;
             grid-template-columns: minmax(0, 1fr) auto;
             gap: 10px;
-            align-items: flex-end;
+            align-items: end;
         }
 
-        .chat-input-area textarea {
+        .chat-input-area textarea{
             width: 100%;
-            padding: 8px 10px;
+            padding: 10px 10px;
             resize: vertical;
             min-height: 46px;
-            max-height: 120px;
+            max-height: 140px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            outline: none;
+            background: #fff;
             font-family: inherit;
             font-size: 13px;
-            border-radius: 12px;
-            border: 1px solid var(--border-soft);
-            outline: none;
-            background: #fbfcff;
+        }
+        .chat-input-area textarea:focus{
+            border-color: #dbeafe;
+            box-shadow: 0 0 0 2px rgba(47,111,214,0.10);
         }
 
-        .chat-input-area textarea:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 1px rgba(76,111,255,0.15);
-        }
-
-        .btn {
-            border: none;
-            cursor: pointer;
-            border-radius: 999px;
-            padding: 9px 16px;
-            font-size: 13px;
-            font-weight: 500;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            white-space: nowrap;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #4c6fff, #6c76ff);
-            color: #ffffff;
-            box-shadow: 0 8px 18px rgba(76, 111, 255, 0.32);
-        }
-
-        .btn-primary:hover {
-            filter: brightness(1.03);
-        }
-
-        .btn-secondary {
-            background: rgba(0,0,0,0.04);
-            color: var(--text-muted);
-        }
-
-        .btn-secondary:hover {
-            background: rgba(0,0,0,0.06);
-        }
-
-        .btn-icon {
-            font-size: 15px;
-        }
-
-        .status-text {
-            margin-top: 6px;
+        .status-text{
+            margin-top: 8px;
             font-size: 12px;
-            color: var(--text-muted);
+            color: var(--muted);
         }
-
-        .status-text.loading::before {
+        .status-text.loading::before{
             content: "●";
-            margin-right: 6px;
-            color: var(--primary);
+            margin-right: 8px;
+            color: var(--primary-2);
             animation: pulse 1s infinite;
         }
-
-        @keyframes pulse {
-            0% { opacity: 0.2; transform: scale(0.9); }
-            50% { opacity: 1; transform: scale(1.03); }
-            100% { opacity: 0.2; transform: scale(0.9); }
+        @keyframes pulse{
+            0%{ opacity: .25; transform: scale(.95); }
+            50%{ opacity: 1; transform: scale(1.03); }
+            100%{ opacity: .25; transform: scale(.95); }
         }
 
-        @media (max-width: 900px) {
-            .layout {
-                grid-template-columns: minmax(0, 1fr);
-            }
+        @media (max-width: 980px){
+            .layout{ grid-template-columns: 1fr; }
+            .chat-card{ min-height: 520px; }
         }
     </style>
 </head>
+
 <body>
-<div class="page-wrapper">
-    <header>
-        <div class="title-block">
-            <div class="badge">
-                <span>FOLLOW-UP</span>
-                <span>口语精讲</span>
+<div class="toefl-shell">
+    <div class="topbar">
+        <div class="header-row">
+            <div>
+                <div class="badge">FOLLOW-UP · 口语精讲</div>
+                <h1 class="title">追问与精讲 · {{ task_name }}</h1>
+                <div class="subtitle">基于你的录音回答与 AI 评分，为你提供一对一追问和精讲服务。</div>
             </div>
-            <h1>
-                追问与精讲 · {{ task_name }}
-            </h1>
-            <div class="subtitle">
-                基于你的录音回答与 AI 评分，为你提供一对一追问和精讲服务。
-            </div>
+
+            <a href="{% url 'spoken_ai:task1_list' %}" class="back-link">
+                ← 返回任务列表
+            </a>
         </div>
-        <a href="{% url 'spoken_ai:task1_list' %}" class="back-link">
-            ← 返回任务列表
-        </a>
-    </header>
+    </div>
 
     <main class="layout">
         <!-- 左侧：原题 + 回答 + 反馈概览 -->
         <section class="card">
-            <div class="card-header">
-                <div>
-                    <div class="card-title">
-                        <span class="icon">📘</span>
-                        题目与回答回顾
-                    </div>
-                    <div class="card-subtitle">你可以随时参考原题和自己的回答，再向 AI 提问。</div>
-                </div>
+            <div class="card-title">
+                <span class="icon-pill">📘</span>
+                题目与回答回顾
             </div>
+            <div class="card-subtitle">你可以随时参考原题和自己的回答，再向 AI 提问。</div>
 
             <div class="section-block">
                 <div class="section-label">阅读文本</div>
@@ -417,7 +398,6 @@
 
             <div class="section-block">
                 <div class="section-label">AI 评分要点</div>
-
                 <div class="feedback-grid">
                     <div class="feedback-item">
                         <h4>主要问题 / 可改进点</h4>
@@ -428,7 +408,6 @@
                         <div>{{ reason|default:"暂无建议" }}</div>
                     </div>
                 </div>
-
             </div>
 
             <div class="section-block">
@@ -436,26 +415,28 @@
                 <div class="content-box">
                     {{ answer|default:"暂无参考答案" }}
                 </div>
-                <div class="feedback-tag-row">
-                    <span class="pill-tag"><strong>小提示</strong>：可以围绕参考答案向 AI 追问「如何用更自然的口语说出来」。</span>
+                <div class="tips">
+                    小提示：可以围绕参考答案向 AI 追问「如何用更自然的口语说出来」，或者让 AI 帮你压缩到考试时间（45/60 秒）。
                 </div>
             </div>
         </section>
 
         <!-- 右侧：AI 追问对话区 -->
         <section class="card chat-card">
-            <div class="card-header">
-                <div>
-                    <div class="card-title">
-                        <span class="icon" style="background: rgba(255,122,162,0.12); color: var(--accent);">💬</span>
-                        继续向 AI 追问
-                    </div>
-                    <div class="chat-header-extra">
-                        你可以问：如何优化句子、哪些地方发音不自然、有没有更高级表达等。
-                    </div>
+            <div class="card-title">
+                <span class="icon-pill" style="background: rgba(47,111,214,0.10);">💬</span>
+                继续向 AI 追问
+            </div>
+            <div class="card-subtitle">
+                你可以问：如何优化句子、哪里不自然、怎么更高级、更像考试高分答案等。
+            </div>
+
+            <div class="chat-meta">
+                <div style="font-size:12px;color:var(--muted);">
+                    建议从一个小目标开始：重写、纠错、提速、提高级表达。
                 </div>
                 <button type="button" class="btn btn-secondary" id="quickTipBtn">
-                    <span class="btn-icon">✨</span>示例问题
+                    ✨ 示例问题
                 </button>
             </div>
 
@@ -470,12 +451,10 @@
             </div>
 
             <div class="chat-input-area">
-                <textarea id="chatInput" placeholder="输入你想追问的问题，例如：请帮我重写一个 45 秒的高分版本……"></textarea>
-                <button class="btn btn-primary" id="sendBtn">
-                    <span class="btn-icon">📤</span>
-                    发送
-                </button>
+                <textarea id="chatInput" placeholder="输入你想追问的问题，例如：请帮我重写一个 60 秒高分版本……"></textarea>
+                <button class="btn btn-primary" id="sendBtn">📤 发送</button>
             </div>
+
             <div class="status-text" id="chatStatus">
                 按下 Enter 发送（Shift+Enter 换行）
             </div>
@@ -531,7 +510,6 @@
         chatInput.value = '';
         setLoading(true);
 
-        // URL 名称不变：spoken_ai:followup_chat
         fetch("{% url 'spoken_ai:followup_chat' %}", {
             method: 'POST',
             headers: {
@@ -539,8 +517,8 @@
                 'X-CSRFToken': '{{ csrf_token }}'
             },
             body: JSON.stringify({
-                message: text,      // 学生的追问
-                context: contextData // 包含 readingtext 和 student_answer
+                message: text,
+                context: contextData
             })
         })
         .then(res => res.json())
@@ -559,10 +537,8 @@
         });
     }
 
-    // 按钮发送
     sendBtn.addEventListener('click', sendMessage);
 
-    // Enter 发送，Shift+Enter 换行
     chatInput.addEventListener('keydown', function (e) {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -570,12 +546,11 @@
         }
     });
 
-    // 一键插入示例追问
     quickTipBtn.addEventListener('click', function () {
         const examples = [
             '请根据我的回答和参考答案，帮我写一个更高级、更自然的 45 秒口语版本。',
             '请指出我回答中 3 处表达问题，并给出更地道的替代表达。',
-            '请帮我整理 5 个跟这篇阅读相关的高频口语句型，并用中文解释用法。',
+            '请帮我整理 5 个跟这题相关的高频口语句型，并用中文解释用法。',
             '如果我要参加正式考试，这个回答大概是几分？我该如何提升到更高分？'
         ];
         const pick = examples[Math.floor(Math.random() * examples.length)];

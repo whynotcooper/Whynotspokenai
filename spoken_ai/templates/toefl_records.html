@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TOEFL 做题记录</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+        }
+        
+        .task-card {
+            transition: all 0.2s ease;
+        }
+        
+        .task-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+        
+        .status-completed { background: #D1EDC4; color: #1B7D1F; }
+        .status-in_progress { background: #FFE08A; color: #8A6D00; }
+        .status-reviewed { background: #C8E1FF; color: #0055D4; }
+        
+        .task-badge-1 { background: #E5F2FF; color: #0055D4; }
+        .task-badge-2 { background: #D1EDC4; color: #1B7D1F; }
+        .task-badge-3 { background: #F3E8FF; color: #7C3AED; }
+        .task-badge-4 { background: #FEF3C7; color: #D97706; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <!-- 页面标题 -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">📚 TOEFL 做题记录</h1>
+                <p class="text-gray-500 mt-1">查看和管理你的练习记录</p>
+            </div>
+            <div class="mt-4 md:mt-0 flex items-center space-x-4">
+                <a href="/toefl_index/" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center transition-colors">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    开始新练习
+                </a>
+            </div>
+        </div>
+
+        <!-- 统计卡片 -->
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 task-card">
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-gray-900">{{ stats.total }}</div>
+                    <div class="text-sm text-gray-500 mt-1">总练习次数</div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 task-card">
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-blue-500">{{ stats.task1 }}</div>
+                    <div class="text-sm text-gray-500 mt-1">Task 1</div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 task-card">
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-green-500">{{ stats.task2 }}</div>
+                    <div class="text-sm text-gray-500 mt-1">Task 2</div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 task-card">
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-purple-500">{{ stats.task3 }}</div>
+                    <div class="text-sm text-gray-500 mt-1">Task 3</div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 task-card">
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-orange-500">
+                        {% if stats.avg_score %}{{ stats.avg_score }}{% else %}-{% endif %}
+                    </div>
+                    <div class="text-sm text-gray-500 mt-1">平均分</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 筛选器 -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
+            <form method="GET" class="flex flex-wrap gap-4 items-end">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">任务类型</label>
+                    <select name="task_type" class="border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">全部</option>
+                        <option value="1" {% if current_task_type == '1' %}selected{% endif %}>Task 1 - 独立口语</option>
+                        <option value="2" {% if current_task_type == '2' %}selected{% endif %}>Task 2 - 综合口语</option>
+                        <option value="3" {% if current_task_type == '3' %}selected{% endif %}>Task 3 - 学术综合</option>
+                        <option value="4" {% if current_task_type == '4' %}selected{% endif %}>Task 4 - 纯学术</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">状态</label>
+                    <select name="status" class="border border-gray-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">全部</option>
+                        <option value="completed" {% if current_status == 'completed' %}selected{% endif %}>已完成</option>
+                        <option value="in_progress" {% if current_status == 'in_progress' %}selected{% endif %}>进行中</option>
+                        <option value="reviewed" {% if current_status == 'reviewed' %}selected{% endif %}>已复习</option>
+                    </select>
+                </div>
+                <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition-colors">
+                    筛选
+                </button>
+                <a href="/toefl/records/" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2 rounded-lg transition-colors">
+                    清除
+                </a>
+            </form>
+        </div>
+
+        <!-- 记录列表 -->
+        {% if records %}
+        <div class="grid gap-4">
+            {% for record in records %}
+            <a href="/toefl/records/{{ record.id }}/" class="block">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 task-card">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <!-- Task 编号 -->
+                            <span class="task-badge-{{ record.task_type }} px-3 py-1 rounded-full text-sm font-semibold">
+                                Task {{ record.task_type }}
+                            </span>
+                            
+                            <!-- 任务名称 -->
+                            <div>
+                                <h3 class="font-semibold text-gray-900">{{ record.get_task_name }}</h3>
+                                <p class="text-sm text-gray-500 mt-1 line-clamp-1 max-w-md">
+                                    {{ record.student_answer|truncatechars:80 }}
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center space-x-6">
+                            <!-- 分数 -->
+                            {% if record.score %}
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-blue-500">{{ record.score }}</div>
+                                <div class="text-xs text-gray-400">综合分</div>
+                            </div>
+                            {% else %}
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-gray-300">-</div>
+                                <div class="text-xs text-gray-400">暂无分</div>
+                            </div>
+                            {% endif %}
+                            
+                            <!-- 状态 -->
+                            <span class="status-badge status-{{ record.status }}">
+                                {{ record.get_status_display }}
+                            </span>
+                            
+                            <!-- 时间 -->
+                            <div class="text-right">
+                                <div class="text-sm text-gray-500">{{ record.created_at|date:"m月d日" }}</div>
+                                <div class="text-xs text-gray-400">{{ record.created_at|date:"H:i" }}</div>
+                            </div>
+                            
+                            <!-- 箭头 -->
+                            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <!-- 空状态 -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
+            <div class="text-6xl mb-4">📝</div>
+            <h3 class="text-xl font-semibold text-gray-900 mb-2">暂无练习记录</h3>
+            <p class="text-gray-500 mb-6">开始你的第一次 TOEFL 口语练习吧！</p>
+            <a href="/toefl_index/" class="inline-flex items-center bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg transition-colors">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                开始练习
+            </a>
+        </div>
+        {% endif %}
+
+        <!-- 底部提示 -->
+        <div class="mt-8 text-center text-gray-400 text-sm">
+            <p>💡 提示：点击记录可查看详细信息、AI 反馈和评分</p>
+        </div>
+    </div>
+</body>
+</html>
